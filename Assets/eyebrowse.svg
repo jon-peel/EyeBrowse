@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- EyeBrowse icon: an eye whose iris is a picture. Colours match the app (black, chartreuse). -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#262a22"/>
+      <stop offset="1" stop-color="#050505"/>
+    </linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3fa9f5"/>
+      <stop offset="1" stop-color="#bfe8ff"/>
+    </linearGradient>
+    <clipPath id="iris">
+      <circle cx="128" cy="128" r="52"/>
+    </clipPath>
+  </defs>
+
+  <rect x="8" y="8" width="240" height="240" rx="52" fill="url(#bg)"/>
+
+  <!-- the eye -->
+  <path d="M20 128 C 64 58, 192 58, 236 128 C 192 198, 64 198, 20 128 Z"
+        fill="#f4f7ee" stroke="#7fff00" stroke-width="12" stroke-linejoin="round"/>
+
+  <!-- iris: a tiny landscape photo -->
+  <g clip-path="url(#iris)">
+    <rect x="70" y="70" width="116" height="116" fill="url(#sky)"/>
+    <circle cx="150" cy="104" r="12" fill="#ffd23f"/>
+    <path d="M70 176 L106 120 L130 150 L150 128 L186 176 Z" fill="#2e7d32"/>
+    <path d="M106 120 L116 136 L100 136 Z M150 128 L158 138 L143 138 Z" fill="#ffffff" opacity="0.9"/>
+    <rect x="70" y="160" width="116" height="30" fill="#1b5e20"/>
+  </g>
+  <circle cx="128" cy="128" r="52" fill="none" stroke="#7fff00" stroke-width="8"/>
+
+  <!-- catch-light -->
+  <circle cx="104" cy="102" r="9" fill="#ffffff" opacity="0.85"/>
+</svg>
