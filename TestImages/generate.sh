@@ -105,19 +105,24 @@ card 640 480 180 "frame 2 of 3"   "$E/animated-2.png"
 card 640 480 300 "frame 3 of 3"   "$E/animated-3.png"
 convert -delay 70 -loop 0 "$E"/animated-{1,2,3}.png "$E/animated.gif"
 rm "$E"/animated-{1,2,3}.png
-# Stored sideways with EXIF orientation 6: upright only if EXIF is honoured.
-card 640 480 120 "EXIF rotated"   "$E/exif-orientation-6.jpg" -rotate -90 -quality 85
-# ImageMagick only updates an existing EXIF block, so insert one by hand: an
-# APP1 segment holding a single IFD entry, Orientation (0x0112) = 6.
-python3 - "$E/exif-orientation-6.jpg" <<'PY'
+# edge/exif/: one JPEG per EXIF orientation, stored transformed so that it is
+# upright, and reads normally, only if that orientation is applied correctly.
+exif_inverse=("" "" -flop "-rotate 180" -flip -transpose "-rotate -90" -transverse "-rotate 90")
+for o in 1 2 3 4 5 6 7 8; do
+    # shellcheck disable=SC2086 # the inverse transform is meant to split into words
+    card 640 480 $(( o * 40 )) "EXIF $o"  "$E/exif/orientation-$o.jpg" ${exif_inverse[$o]} -quality 85
+    # ImageMagick only updates an existing EXIF block, so insert one by hand: an
+    # APP1 segment holding a single IFD entry, Orientation (0x0112).
+    python3 - "$E/exif/orientation-$o.jpg" "$o" <<'PY'
 import struct, sys
-path = sys.argv[1]
+path, orientation = sys.argv[1], int(sys.argv[2])
 data = open(path, 'rb').read()
 tiff = b'II*\x00' + struct.pack('<I', 8) + struct.pack('<H', 1) \
-     + struct.pack('<HHIHH', 0x0112, 3, 1, 6, 0) + struct.pack('<I', 0)
+     + struct.pack('<HHIHH', 0x0112, 3, 1, orientation, 0) + struct.pack('<I', 0)
 app1 = b'Exif\x00\x00' + tiff
 open(path, 'wb').write(data[:2] + b'\xff\xe1' + struct.pack('>H', len(app1) + 2) + app1 + data[2:])
 PY
+done
 card 640 480 240 "spaces"         "$E/name with spaces.png"
 card 640 480 330 "unicode"        "$E/ünïcödé 名前.png"
 card 640 480 30  "alone"          "$E/alone/only-image.png"

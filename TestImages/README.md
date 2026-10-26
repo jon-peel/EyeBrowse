@@ -21,7 +21,8 @@ Keys: `q`/`e` previous/next, `w` `a` `s` `d` pan, `c` true size, `x` fit,
 | `sizes/` | From 1x1 and 16x16 up to 8000x6000, with square, panorama (6000x600), tall (600x4000) and portrait shapes, for true size, fit, fill and panning. |
 | `many/` | 60 numbered 400x300 cards, `001` to `060`, for stepping through a long folder. The colour shifts with each one, so a skipped or repeated image stands out. |
 | `ordering/` | `page 1`, `page 2`, `Page 3`, `page 10`, `page 20`, `zebra`: names that sort wrongly as plain text. Each caption gives the position it should have (`1 of 6` … `6 of 6`), with numbers in natural order and case ignored. |
-| `edge/` | A transparent PNG (only the circle should show), an animated GIF, a JPEG stored sideways with EXIF orientation 6 (upright only if EXIF is honoured), and file names with spaces and non-ASCII characters. |
+| `edge/` | A transparent PNG (only the circle should show), an animated GIF (three frames, 0.7 s each), and file names with spaces and non-ASCII characters. |
+| `edge/exif/` | One JPEG per EXIF orientation, 1 to 8, each stored mirrored or rotated. All eight should look identical apart from colour: upright, with the corner labels in their corners. |
 | `edge/alone/` | A folder holding a single image: the counter should read `[1/1]`. |
 | `edge/broken/` | A truncated PNG next to a good one. |
 
