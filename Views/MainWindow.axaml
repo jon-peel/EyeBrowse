@@ -10,6 +10,47 @@
         Icon="/Assets/eyebrowse.ico"
         Title="EyeBrowse">
 
+    <Window.Styles>
+        <Style Selector="Border.modes">
+            <Setter Property="Background" Value="#CC000000" />
+            <Setter Property="BorderBrush" Value="#407FFF00" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="Padding" Value="3" />
+        </Style>
+        <Style Selector="Border.mode">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="BorderThickness" Value="1.5" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Opacity" Value="0.6" />
+        </Style>
+        <Style Selector="Border.mode.on">
+            <Setter Property="BorderBrush" Value="Chartreuse" />
+            <Setter Property="Background" Value="#247FFF00" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Border.mode StackPanel">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.mode Viewbox">
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+        </Style>
+        <Style Selector="Border.mode TextBlock">
+            <Setter Property="FontSize" Value="7" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="#B8D99A" />
+        </Style>
+        <Style Selector=":is(Shape).line">
+            <Setter Property="Stroke" Value="Chartreuse" />
+            <Setter Property="StrokeThickness" Value="2" />
+        </Style>
+    </Window.Styles>
+
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
@@ -22,6 +63,48 @@
         <StackPanel>
             <TextBlock Text="{Binding Title}" />
         </StackPanel>
+
+        <!-- Scale modes, in keyboard order (Z X C); the current one is outlined. Icons are drawn on a 32x32 grid. -->
+        <Border Classes="modes" Canvas.Top="8" Canvas.Right="8">
+            <StackPanel Orientation="Horizontal" Spacing="2">
+                <Border Classes="mode" Classes.on="{Binding IsFill}" ToolTip.Tip="Fill (Z)">
+                    <StackPanel>
+                        <Viewbox>
+                            <Canvas Width="32" Height="32">
+                                <Path Classes="line" StrokeThickness="2.4" Data="M3 9 V3 H9 M23 3 H29 V9 M29 23 V29 H23 M9 29 H3 V23" />
+                                <Rectangle Canvas.Left="6" Canvas.Top="6" Width="20" Height="20" Fill="Chartreuse" Opacity="0.85" />
+                                <Path Stroke="Black" StrokeThickness="2" Data="M10 10 L4 4 M22 10 L28 4 M22 22 L28 28 M10 22 L4 28" />
+                            </Canvas>
+                        </Viewbox>
+                        <TextBlock Text="Z" />
+                    </StackPanel>
+                </Border>
+                <Border Classes="mode" Classes.on="{Binding IsFit}" ToolTip.Tip="Fit (X)">
+                    <StackPanel>
+                        <Viewbox>
+                            <Canvas Width="32" Height="32">
+                                <Path Classes="line" StrokeThickness="2.4" Data="M3 9 V3 H9 M23 3 H29 V9 M29 23 V29 H23 M9 29 H3 V23" />
+                                <Rectangle Classes="line" Canvas.Left="9" Canvas.Top="11" Width="14" Height="10" />
+                                <Path Classes="line" Data="M12 8 L16 4.5 L20 8 M12 24 L16 27.5 L20 24" />
+                            </Canvas>
+                        </Viewbox>
+                        <TextBlock Text="X" />
+                    </StackPanel>
+                </Border>
+                <Border Classes="mode" Classes.on="{Binding IsTrueSize}" ToolTip.Tip="True size (C)">
+                    <StackPanel>
+                        <Viewbox>
+                            <Canvas Width="32" Height="32">
+                                <Path Classes="line" Opacity="0.4" Data="M3 9 V3 H9 M23 3 H29 V9 M29 23 V29 H23 M9 29 H3 V23" />
+                                <Rectangle Classes="line" Canvas.Left="9" Canvas.Top="9" Width="14" Height="14" />
+                                <Ellipse Canvas.Left="14" Canvas.Top="14" Width="4" Height="4" Fill="Chartreuse" />
+                            </Canvas>
+                        </Viewbox>
+                        <TextBlock Text="C" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
     </Canvas>
 
 </Window>

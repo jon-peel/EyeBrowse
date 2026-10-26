@@ -37,6 +37,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     readonly DispatcherTimer _animation = new();
     readonly (string path, Lazy<LoadedImage> image)[] _dirImages;
+    readonly ObservableAsPropertyHelper<bool> _isFill;
+    readonly ObservableAsPropertyHelper<bool> _isFit;
+    readonly ObservableAsPropertyHelper<bool> _isTrueSize;
     readonly ObservableAsPropertyHelper<Bitmap> _picture;
     readonly ObservableAsPropertyHelper<Size> _pictureSize;
     readonly ObservableAsPropertyHelper<Point> _position;
@@ -71,6 +74,10 @@ public partial class MainWindowViewModel : ViewModelBase
         _animation.Tick += (_, _) => NextFrame();
         this.WhenAnyValue(x => x.Index).Subscribe(_ => StartAnimation());
 
+        _isFill = this.WhenAnyValue(x => x.Display).Select(x => x == Zoom.Fill).ToProperty(this, x => x.IsFill);
+        _isFit = this.WhenAnyValue(x => x.Display).Select(x => x == Zoom.Fit).ToProperty(this, x => x.IsFit);
+        _isTrueSize = this.WhenAnyValue(x => x.Display).Select(x => x == Zoom.True).ToProperty(this, x => x.IsTrueSize);
+
         _pictureSize = this
             .WhenAnyValue(x => x.Picture, x => x.WindowSize, x => x.Display)
             .Select(_ => SizePicture())
@@ -91,6 +98,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public string Title => _title.Value;
     public Bitmap Picture => _picture.Value;
+    public bool IsFill => _isFill.Value;
+    public bool IsFit => _isFit.Value;
+    public bool IsTrueSize => _isTrueSize.Value;
     public Size WindowSize => _windowSize.Value;
     public Size PictureSize => _pictureSize.Value;
     public Point PicturePosition => _position.Value;
