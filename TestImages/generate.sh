@@ -46,7 +46,7 @@ card() {
         "$@" "$out"
 }
 
-rm -rf "$ROOT"/{formats,sizes,many,edge}
+rm -rf "$ROOT"/{formats,sizes,many,ordering,edge}
 
 # formats/: the same 640x480 card in every supported format, plus upper-case
 # extensions and a file that must be skipped.
@@ -84,6 +84,16 @@ for i in $(seq 1 60); do
     n=$(printf '%03d' "$i")
     card 400 300 $(( i * 6 )) "$n / 060" "$ROOT/many/$n.png"
 done
+
+# ordering/: names that sort wrongly as plain text. The caption is the
+# position each should have: numbers in natural order, case ignored.
+O=$ROOT/ordering
+card 400 300 0   "1 of 6"         "$O/page 1.png"
+card 400 300 60  "2 of 6"         "$O/page 2.png"
+card 400 300 120 "3 of 6"         "$O/Page 3.png"
+card 400 300 180 "4 of 6"         "$O/page 10.png"
+card 400 300 240 "5 of 6"         "$O/page 20.png"
+card 400 300 300 "6 of 6"         "$O/zebra.png"
 
 # edge/: awkward cases.
 E=$ROOT/edge

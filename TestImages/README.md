@@ -20,6 +20,7 @@ Keys: `q`/`e` previous/next, `w` `a` `s` `d` pan, `c` true size, `x` fit,
 | `formats/` | The same 640x480 card as PNG, JPG, JPEG, BMP, GIF, TIF, TIFF and WebP, plus upper/mixed-case extensions (`.PNG`, `.JPG`, `.WebP`). `12-not-an-image.txt` must be skipped, so the counter shows 11 images. |
 | `sizes/` | From 1x1 and 16x16 up to 8000x6000, with square, panorama (6000x600), tall (600x4000) and portrait shapes, for true size, fit, fill and panning. |
 | `many/` | 60 numbered 400x300 cards, `001` to `060`, for stepping through a long folder. The colour shifts with each one, so a skipped or repeated image stands out. |
+| `ordering/` | `page 1`, `page 2`, `Page 3`, `page 10`, `page 20`, `zebra`: names that sort wrongly as plain text. Each caption gives the position it should have (`1 of 6` … `6 of 6`), with numbers in natural order and case ignored. |
 | `edge/` | A transparent PNG (only the circle should show), an animated GIF, a JPEG stored sideways with EXIF orientation 6 (upright only if EXIF is honoured), and file names with spaces and non-ASCII characters. |
 | `edge/alone/` | A folder holding a single image: the counter should read `[1/1]`. |
 | `edge/broken/` | A truncated PNG next to a good one. |
@@ -34,4 +35,4 @@ script rather than editing images by hand, then run:
 ./TestImages/generate.sh
 ```
 
-It deletes and recreates the four folders above.
+It deletes and recreates the five folders above.
