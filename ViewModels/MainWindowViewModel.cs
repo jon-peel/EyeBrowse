@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using ReactiveUI.Primitives;
@@ -158,12 +159,19 @@ public partial class MainWindowViewModel : ViewModelBase
     static (int index, (string, Lazy<Bitmap>)[] dirImages) GetDirImageIndex(string initialPath)
     {
         string[] ext = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff", ".webp"];
-        var directory = Path.GetDirectoryName(initialPath)!;
+        var fullPath = Path.GetFullPath(initialPath);
+        var directory = Path.GetDirectoryName(fullPath)!;
+        // Natural order, as file managers show it: "img2" before "img10".
+        var byName = StringComparer.Create(CultureInfo.CurrentCulture, CompareOptions.IgnoreCase | CompareOptions.NumericOrdering);
         var imagePaths = Directory
             .GetFiles(directory)
             .Where(file => ext.Any(x => Path.GetExtension(file).Equals(x, StringComparison.InvariantCultureIgnoreCase)))
+            .OrderBy(Path.GetFileName, byName)
             .ToArray();
-        var index = Array.IndexOf(imagePaths, initialPath);
+        if (imagePaths.Length == 0)
+            throw new ArgumentException($"no images found in {directory}");
+        // Not one of the listed images (e.g. an unsupported file): start at the first one.
+        var index = Math.Max(Array.IndexOf(imagePaths, fullPath), 0);
         var images = imagePaths
             .Select(path => (path, new Lazy<Bitmap>(() => ImageLoader.Load(path))))
             .ToArray();
