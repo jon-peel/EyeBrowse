@@ -2,9 +2,10 @@ name: Build
 
 on:
   push:
-    branches: [ "**" ]
+    branches: [ master ]
     tags: [ "v*" ]
   pull_request:
+    branches: [ master ]
   workflow_dispatch:
 
 permissions:
