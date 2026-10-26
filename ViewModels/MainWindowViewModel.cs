@@ -5,6 +5,7 @@ using System.Linq;
 using ReactiveUI.Primitives;
 using Avalonia;
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using EyeBrowse.Models;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -34,7 +35,8 @@ public partial class MainWindowViewModel : ViewModelBase
         Fill
     }
 
-    readonly (string path, Lazy<Bitmap> picture)[] _dirImages;
+    readonly DispatcherTimer _animation = new();
+    readonly (string path, Lazy<LoadedImage> image)[] _dirImages;
     readonly ObservableAsPropertyHelper<Bitmap> _picture;
     readonly ObservableAsPropertyHelper<Size> _pictureSize;
     readonly ObservableAsPropertyHelper<Point> _position;
@@ -63,9 +65,11 @@ public partial class MainWindowViewModel : ViewModelBase
             .ToProperty(this, x => x.Title);
 
         _picture = this
-            .WhenAnyValue(x => x.Index)
-            .Select(x => _dirImages[x].picture.Value)
+            .WhenAnyValue(x => x.Index, x => x.Frame, (_, frame) => CurrentImage.Frames[frame % CurrentImage.Frames.Length])
             .ToProperty(this, x => x.Picture);
+
+        _animation.Tick += (_, _) => NextFrame();
+        this.WhenAnyValue(x => x.Index).Subscribe(_ => StartAnimation());
 
         _pictureSize = this
             .WhenAnyValue(x => x.Picture, x => x.WindowSize, x => x.Display)
@@ -81,6 +85,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [Reactive] private partial int Index { get; set; }
     [Reactive] private partial (int x, int y) Offset { get; set; }
     [Reactive] private partial Zoom Display { get; set; }
+    [Reactive] private partial int Frame { get; set; }
+
+    LoadedImage CurrentImage => _dirImages[Index].image.Value;
 
     public string Title => _title.Value;
     public Bitmap Picture => _picture.Value;
@@ -91,6 +98,21 @@ public partial class MainWindowViewModel : ViewModelBase
     public ReactiveCommand<Direction, RxVoid> PanCommand { get; }
     public ReactiveCommand<Zoom, RxVoid> ZoomCommand { get; }
     public ReactiveCommand<Size, Size> ResizeCommand { get; }
+
+    void StartAnimation()
+    {
+        _animation.Stop();
+        Frame = 0;
+        if (!CurrentImage.IsAnimated) return;
+        _animation.Interval = CurrentImage.Durations[0];
+        _animation.Start();
+    }
+
+    void NextFrame()
+    {
+        Frame = (Frame + 1) % CurrentImage.Frames.Length;
+        _animation.Interval = CurrentImage.Durations[Frame];
+    }
 
     Point PositionPicture()
     {
@@ -156,7 +178,7 @@ public partial class MainWindowViewModel : ViewModelBase
         };
     }
 
-    static (int index, (string, Lazy<Bitmap>)[] dirImages) GetDirImageIndex(string initialPath)
+    static (int index, (string, Lazy<LoadedImage>)[] dirImages) GetDirImageIndex(string initialPath)
     {
         string[] ext = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff", ".webp"];
         var fullPath = Path.GetFullPath(initialPath);
@@ -173,7 +195,7 @@ public partial class MainWindowViewModel : ViewModelBase
         // Not one of the listed images (e.g. an unsupported file): start at the first one.
         var index = Math.Max(Array.IndexOf(imagePaths, fullPath), 0);
         var images = imagePaths
-            .Select(path => (path, new Lazy<Bitmap>(() => ImageLoader.Load(path))))
+            .Select(path => (path, new Lazy<LoadedImage>(() => ImageLoader.Load(path))))
             .ToArray();
         return (index, images);
     }
