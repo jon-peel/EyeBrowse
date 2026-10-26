@@ -156,7 +156,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     static (int index, (string, Lazy<Bitmap>)[] dirImages) GetDirImageIndex(string initialPath)
     {
-        string[] ext = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff", "webp"];
+        string[] ext = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff", ".webp"];
         var directory = Path.GetDirectoryName(initialPath)!;
         var imagePaths = Directory
             .GetFiles(directory)
