@@ -1,16 +1,15 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives;
 using Avalonia;
 using Avalonia.Media.Imaging;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 
 namespace EyeBrowse.ViewModels;
 
-public class MainWindowViewModel : ViewModelBase
+public partial class MainWindowViewModel : ViewModelBase
 {
     public enum Browse
     {
@@ -77,18 +76,18 @@ public class MainWindowViewModel : ViewModelBase
             .ToProperty(this, x => x.PicturePosition);
     }
 
-    [Reactive] int Index { get; set; }
-    [Reactive] (int x, int y) Offset { get; set; }
-    [Reactive] Zoom Display { get; set; }
+    [Reactive] private partial int Index { get; set; }
+    [Reactive] private partial (int x, int y) Offset { get; set; }
+    [Reactive] private partial Zoom Display { get; set; }
 
     public string Title => _title.Value;
     public Bitmap Picture => _picture.Value;
     public Size WindowSize => _windowSize.Value;
     public Size PictureSize => _pictureSize.Value;
     public Point PicturePosition => _position.Value;
-    public ReactiveCommand<Browse, Unit> BrowseCommand { get; }
-    public ReactiveCommand<Direction, Unit> PanCommand { get; }
-    public ReactiveCommand<Zoom, Unit> ZoomCommand { get; }
+    public ReactiveCommand<Browse, RxVoid> BrowseCommand { get; }
+    public ReactiveCommand<Direction, RxVoid> PanCommand { get; }
+    public ReactiveCommand<Zoom, RxVoid> ZoomCommand { get; }
     public ReactiveCommand<Size, Size> ResizeCommand { get; }
 
     Point PositionPicture()

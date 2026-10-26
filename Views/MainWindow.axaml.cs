@@ -1,8 +1,8 @@
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Signals;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.ReactiveUI;
+using ReactiveUI.Avalonia;
 using EyeBrowse.ViewModels;
 using ReactiveUI;
 using Direction = EyeBrowse.ViewModels.MainWindowViewModel.Direction;
