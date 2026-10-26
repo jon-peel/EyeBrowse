@@ -4,6 +4,7 @@ using System.Linq;
 using ReactiveUI.Primitives;
 using Avalonia;
 using Avalonia.Media.Imaging;
+using EyeBrowse.Models;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 
@@ -156,7 +157,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     static (int index, (string, Lazy<Bitmap>)[] dirImages) GetDirImageIndex(string initialPath)
     {
-        string[] ext = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff", ".webp"];
+        string[] ext = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff", ".webp"];
         var directory = Path.GetDirectoryName(initialPath)!;
         var imagePaths = Directory
             .GetFiles(directory)
@@ -164,7 +165,7 @@ public partial class MainWindowViewModel : ViewModelBase
             .ToArray();
         var index = Array.IndexOf(imagePaths, initialPath);
         var images = imagePaths
-            .Select(path => (path, new Lazy<Bitmap>(() => new(path))))
+            .Select(path => (path, new Lazy<Bitmap>(() => ImageLoader.Load(path))))
             .ToArray();
         return (index, images);
     }

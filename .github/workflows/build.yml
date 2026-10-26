@@ -54,6 +54,8 @@ jobs:
         working-directory: publish
         run: |
           name=EyeBrowse-${{ matrix.rid }}
+          # Native debug symbols shipped by the SkiaSharp/HarfBuzzSharp packages.
+          rm -f "$name"/*.pdb
           if [ "${{ matrix.archive }}" = "zip" ]; then
             zip -r "$name.zip" "$name"
           else
