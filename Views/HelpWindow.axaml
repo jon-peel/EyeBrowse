@@ -66,6 +66,6 @@
         </Grid>
 
         <TextBlock Classes="note" Margin="0,16,0,0" FontSize="11"
-                   Text="Images: PNG, JPEG, BMP, GIF, TIFF and WebP. Archives: .cbz and .zip. Press Esc to close this window." />
+                   Text="Images: PNG, JPEG, BMP, GIF, TIFF and WebP. Archives: .cbz and .zip, and .cbr, .cb7 or .cbt files that are really zips. Press Esc to close this window." />
     </StackPanel>
 </Window>
