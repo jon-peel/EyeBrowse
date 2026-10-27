@@ -22,20 +22,35 @@ public static class ImageLoader
     static readonly TimeSpan MinFrameDuration = TimeSpan.FromMilliseconds(20);
     static readonly TimeSpan DefaultFrameDuration = TimeSpan.FromMilliseconds(100);
 
+    static readonly string[] Extensions = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff", ".webp"];
+
+    /// <summary>Whether a file or archive entry name has a supported image extension.</summary>
+    public static bool IsImage(string name)
+    {
+        return Extensions.Contains(Path.GetExtension(name), StringComparer.OrdinalIgnoreCase);
+    }
+
     public static LoadedImage Load(string path)
     {
-        return Path.GetExtension(path).ToLowerInvariant() switch
+        return Load(path, File.ReadAllBytes(path));
+    }
+
+    /// <summary>Decodes image data; <paramref name="name"/> is only used for its extension.</summary>
+    public static LoadedImage Load(string name, byte[] data)
+    {
+        return Path.GetExtension(name).ToLowerInvariant() switch
         {
-            ".tif" or ".tiff" => new([LoadTiff(path)], [TimeSpan.Zero]),
-            _ => LoadWithSkia(path)
+            ".tif" or ".tiff" => new([LoadTiff(data)], [TimeSpan.Zero]),
+            _ => LoadWithSkia(data)
         };
     }
 
     // Decodes with Skia directly rather than through Avalonia's Bitmap(path), which
     // ignores EXIF orientation and only ever decodes the first frame.
-    static LoadedImage LoadWithSkia(string path)
+    static LoadedImage LoadWithSkia(byte[] data)
     {
-        using var codec = SKCodec.Create(path) ?? throw new InvalidDataException("not a readable image");
+        using var skData = SKData.CreateCopy(data);
+        using var codec = SKCodec.Create(skData) ?? throw new InvalidDataException("not a readable image");
         var info = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
         var frameInfos = codec.FrameCount > 1 ? codec.FrameInfo : [];
 
@@ -121,9 +136,10 @@ public static class ImageLoader
     }
 
     // Skia, which Avalonia decodes images with, has no TIFF support.
-    static Bitmap LoadTiff(string path)
+    static Bitmap LoadTiff(byte[] data)
     {
-        using var tiff = Tiff.Open(path, "r") ?? throw new InvalidDataException("not a readable TIFF");
+        using var tiff = Tiff.ClientOpen("image", "r", new MemoryStream(data), new TiffStream())
+                         ?? throw new InvalidDataException("not a readable TIFF");
         var width = tiff.GetField(TiffTag.IMAGEWIDTH)[0].ToInt();
         var height = tiff.GetField(TiffTag.IMAGELENGTH)[0].ToInt();
 

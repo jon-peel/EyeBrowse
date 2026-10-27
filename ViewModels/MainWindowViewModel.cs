@@ -190,15 +190,27 @@ public partial class MainWindowViewModel : ViewModelBase
 
     static (int index, (string, Lazy<LoadedImage>)[] dirImages) GetDirImageIndex(string initialPath)
     {
-        string[] ext = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff", ".webp"];
         var fullPath = Path.GetFullPath(initialPath);
-        // A folder opens at its first image.
-        var directory = Directory.Exists(fullPath) ? fullPath : Path.GetDirectoryName(fullPath)!;
         // Natural order, as file managers show it: "img2" before "img10".
         var byName = StringComparer.Create(CultureInfo.CurrentCulture, CompareOptions.IgnoreCase | CompareOptions.NumericOrdering);
+
+        // An archive (e.g. a comic book) opens at its first page.
+        if (ImageArchive.IsArchive(fullPath) && File.Exists(fullPath))
+        {
+            var pages = ImageArchive.ListImages(fullPath, byName);
+            if (pages.Length == 0)
+                throw new ArgumentException($"no images found in {fullPath}");
+            var archiveName = Path.GetFileName(fullPath);
+            return (0, pages
+                .Select(page => ($"{archiveName} › {page}", new Lazy<LoadedImage>(() => ImageArchive.Load(fullPath, page))))
+                .ToArray());
+        }
+
+        // A folder opens at its first image.
+        var directory = Directory.Exists(fullPath) ? fullPath : Path.GetDirectoryName(fullPath)!;
         var imagePaths = Directory
             .GetFiles(directory)
-            .Where(file => ext.Any(x => Path.GetExtension(file).Equals(x, StringComparison.InvariantCultureIgnoreCase)))
+            .Where(ImageLoader.IsImage)
             .OrderBy(Path.GetFileName, byName)
             .ToArray();
         if (imagePaths.Length == 0)

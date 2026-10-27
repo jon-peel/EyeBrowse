@@ -45,9 +45,9 @@
 
         <TextBlock Classes="heading" Text="How to use" />
         <TextBlock Text="Open an image with EyeBrowse, for example with right-click, Open with, or run:" />
-        <TextBlock Text="EyeBrowse &lt;image or folder&gt;" FontFamily="monospace" Margin="0,6,0,0" Foreground="#DFFFBF" />
+        <TextBlock Text="EyeBrowse &lt;image, folder or archive&gt;" FontFamily="monospace" Margin="0,6,0,0" Foreground="#DFFFBF" />
         <TextBlock Classes="note" Margin="0,6,0,0"
-                   Text="It shows that image full screen, and you can step through the other images in the same folder." />
+                   Text="It shows that image full screen, and you can step through the other images in the same folder, or the pages of a comic book archive." />
 
         <TextBlock Classes="heading" Text="Keys" />
         <Grid Classes="keys" ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
@@ -66,6 +66,6 @@
         </Grid>
 
         <TextBlock Classes="note" Margin="0,16,0,0" FontSize="11"
-                   Text="PNG, JPEG, BMP, GIF, TIFF and WebP. Press Esc to close this window." />
+                   Text="Images: PNG, JPEG, BMP, GIF, TIFF and WebP. Archives: .cbz and .zip. Press Esc to close this window." />
     </StackPanel>
 </Window>
