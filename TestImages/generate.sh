@@ -190,6 +190,38 @@ build('no-images.cbz', [('ComicInfo.xml', comic_info), ('readme.txt', b'No pages
 whole = open(os.path.join(out, 'comic.cbz'), 'rb').read()
 open(os.path.join(out, 'broken.cbz'), 'wb').write(whole[:len(whole) // 3])
 PY
+# Comic archive extensions that aren't zip formats. EyeBrowse goes by content: a zip
+# opens whatever it's called, anything else is explained. There is no free tool to
+# create RAR or 7-Zip files, so those two are stubs holding just the format's
+# signature, which is all EyeBrowse looks at.
+card 640 480 20  "zip named .cbr" "$STAGE/misnamed-cbr/1.png"
+card 640 480 140 "zip named .cb7" "$STAGE/misnamed-cb7/1.png"
+card 640 480 260 "zip named .cbt" "$STAGE/misnamed-cbt/1.png"
+card 640 480 200 "tar page"       "$STAGE/tar/1.png"
+python3 - "$STAGE" "$A" <<'PY'
+import io, os, sys, tarfile, zipfile
+stage, out = sys.argv[1], sys.argv[2]
+STAMP = (2026, 1, 1, 0, 0, 0)
+
+def page(folder):
+    return open(os.path.join(stage, folder, '1.png'), 'rb').read()
+
+for ext in ('cbr', 'cb7', 'cbt'):
+    with zipfile.ZipFile(os.path.join(out, f'really-a-zip.{ext}'), 'w') as z:
+        info = zipfile.ZipInfo('1.png', STAMP)
+        z.writestr(info, page(f'misnamed-{ext}'))
+
+note = b'\nTest stub for EyeBrowse: only the signature of this format, not a usable archive.\n'
+open(os.path.join(out, 'real-rar.cbr'), 'wb').write(b'Rar!\x1a\x07\x01\x00' + note)
+open(os.path.join(out, 'rar-named.cbz'), 'wb').write(b'Rar!\x1a\x07\x01\x00' + note)
+open(os.path.join(out, 'real-7zip.cb7'), 'wb').write(b'7z\xbc\xaf\x27\x1c\x00\x04' + note)
+
+data = page('tar')
+with tarfile.open(os.path.join(out, 'real-tar.cbt'), 'w', format=tarfile.USTAR_FORMAT) as t:
+    info = tarfile.TarInfo('1.png')
+    info.size, info.mtime = len(data), 1767225600
+    t.addfile(info, io.BytesIO(data))
+PY
 rm -rf "$STAGE"
 
 echo "Generated $(find "$ROOT" -type f ! -name generate.sh ! -name README.md | wc -l) files," \
