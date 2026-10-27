@@ -46,7 +46,7 @@ card() {
         "$@" "$out"
 }
 
-rm -rf "$ROOT"/{formats,sizes,many,ordering,edge}
+rm -rf "$ROOT"/{formats,sizes,many,ordering,edge,archives}
 
 # formats/: the same 640x480 card in every supported format, plus upper-case
 # extensions and a file that must be skipped.
@@ -131,6 +131,66 @@ card 640 480 90  "broken"         "$E/broken/truncated.png"
 head -c 2000 "$E/broken/truncated.png" > "$E/broken/truncated.tmp"
 mv "$E/broken/truncated.tmp" "$E/broken/truncated.png"
 card 640 480 150 "next to broken" "$E/broken/fine.png"
+
+# archives/: zip and comic book (.cbz) archives, opened like an image. Pages are
+# stored in reverse order, so they only appear in order if EyeBrowse sorts them.
+A=$ROOT/archives
+STAGE=$(mktemp -d)
+for i in $(seq 1 12); do
+    card 600 900 $(( i * 30 )) "Page $i of 12" "$STAGE/comic/page$i.jpg" -quality 85
+done
+n=0
+for chapter in 1 2 10; do
+    for p in 1 2 3; do
+        n=$(( n + 1 ))
+        card 600 900 $(( n * 40 )) "Ch $chapter p $p ($n/9)" "$STAGE/manga/Vol 1/Chapter $chapter/0$p.jpg" -quality 85
+    done
+done
+card 640 480 0   "PNG in zip"     "$STAGE/mixed/1-png.png"
+card 640 480 50  "JPEG in zip"    "$STAGE/mixed/2-jpeg.jpg" -quality 85
+card 640 480 100 "BMP in zip"     "BMP3:$STAGE/mixed/3-bmp.bmp" -type Palette -compress RLE
+card 640 480 150 "TIFF in zip"    "$STAGE/mixed/4-tiff.tif" -compress LZW
+card 640 480 200 "WebP in zip"    "$STAGE/mixed/5-webp.webp" -quality 85
+card 640 480 250 "PNG (.PNG)"     "$STAGE/mixed/6-UPPER.PNG"
+cp "$ROOT/edge/animated.gif" "$STAGE/mixed/7-animated.gif"
+card 640 480 300 "upper 1 of 2"   "$STAGE/upper/1.png"
+card 640 480 330 "upper 2 of 2"   "$STAGE/upper/2.png"
+
+python3 - "$STAGE" "$A" <<'PY'
+import os, sys, zipfile
+stage, out = sys.argv[1], sys.argv[2]
+os.makedirs(out, exist_ok=True)
+STAMP = (2026, 1, 1, 0, 0, 0)  # fixed, so regenerating doesn't change the bytes
+
+def build(name, entries, compression=zipfile.ZIP_STORED):
+    """entries: (name in archive, bytes); written in the given order."""
+    with zipfile.ZipFile(os.path.join(out, name), 'w') as z:
+        for arcname, data in entries:
+            info = zipfile.ZipInfo(arcname, STAMP)
+            info.compress_type = compression
+            z.writestr(info, data)
+
+def files(folder):
+    root = os.path.join(stage, folder)
+    found = []
+    for dirpath, _, names in os.walk(root):
+        for n in names:
+            path = os.path.join(dirpath, n)
+            found.append((os.path.relpath(path, root).replace(os.sep, '/'), open(path, 'rb').read()))
+    return sorted(found, reverse=True)  # reverse order on purpose
+
+comic_info = b'<?xml version="1.0"?>\n<ComicInfo><Title>Test comic</Title></ComicInfo>\n'
+build('comic.cbz', files('comic') + [('ComicInfo.xml', comic_info)])
+build('manga.cbz', files('manga') + [
+    ('__MACOSX/Vol 1/Chapter 1/._01.jpg', b'\x00\x05\x16\x07 macOS metadata, not an image'),
+    ('ComicInfo.xml', comic_info)])
+build('mixed-formats.zip', files('mixed'), zipfile.ZIP_DEFLATED)
+build('UPPER-CASE.CBZ', files('upper'))
+build('no-images.cbz', [('ComicInfo.xml', comic_info), ('readme.txt', b'No pages in here.\n')])
+whole = open(os.path.join(out, 'comic.cbz'), 'rb').read()
+open(os.path.join(out, 'broken.cbz'), 'wb').write(whole[:len(whole) // 3])
+PY
+rm -rf "$STAGE"
 
 echo "Generated $(find "$ROOT" -type f ! -name generate.sh ! -name README.md | wc -l) files," \
      "$(du -sh --exclude=generate.sh "$ROOT" | cut -f1) total."
