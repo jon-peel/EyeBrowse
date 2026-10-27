@@ -192,7 +192,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         string[] ext = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff", ".webp"];
         var fullPath = Path.GetFullPath(initialPath);
-        var directory = Path.GetDirectoryName(fullPath)!;
+        // A folder opens at its first image.
+        var directory = Directory.Exists(fullPath) ? fullPath : Path.GetDirectoryName(fullPath)!;
         // Natural order, as file managers show it: "img2" before "img10".
         var byName = StringComparer.Create(CultureInfo.CurrentCulture, CompareOptions.IgnoreCase | CompareOptions.NumericOrdering);
         var imagePaths = Directory

@@ -1,0 +1,71 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="EyeBrowse.Views.HelpWindow"
+        Background="Black" Foreground="Chartreuse"
+        Icon="/Assets/eyebrowse.ico"
+        Title="EyeBrowse"
+        Width="460" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Styles>
+        <Style Selector="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style Selector="TextBlock.heading">
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="#DFFFBF" />
+            <Setter Property="Margin" Value="0,14,0,4" />
+        </Style>
+        <Style Selector="TextBlock.note">
+            <Setter Property="Foreground" Value="#B8D99A" />
+        </Style>
+        <Style Selector="Grid.keys TextBlock">
+            <Setter Property="Margin" Value="0,1" />
+        </Style>
+        <Style Selector="Grid.keys TextBlock.key">
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="#DFFFBF" />
+        </Style>
+    </Window.Styles>
+
+    <StackPanel Margin="24,20">
+        <StackPanel Orientation="Horizontal" Spacing="14">
+            <Image Source="/Assets/eyebrowse-512.png" Width="56" Height="56" />
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="EyeBrowse" FontSize="22" FontWeight="Bold" />
+                <TextBlock Classes="note" Text="A full-screen image browser." />
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Shown only when EyeBrowse was given something it couldn't open. -->
+        <Border x:Name="ErrorPanel" IsVisible="False" Margin="0,16,0,0" Padding="10,8"
+                Background="#33FF4040" BorderBrush="#FF6060" BorderThickness="1" CornerRadius="4">
+            <TextBlock x:Name="ErrorText" Foreground="#FFB0B0" />
+        </Border>
+
+        <TextBlock Classes="heading" Text="How to use" />
+        <TextBlock Text="Open an image with EyeBrowse, for example with right-click, Open with, or run:" />
+        <TextBlock Text="EyeBrowse &lt;image or folder&gt;" FontFamily="monospace" Margin="0,6,0,0" Foreground="#DFFFBF" />
+        <TextBlock Classes="note" Margin="0,6,0,0"
+                   Text="It shows that image full screen, and you can step through the other images in the same folder." />
+
+        <TextBlock Classes="heading" Text="Keys" />
+        <Grid Classes="keys" ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+            <TextBlock Grid.Row="0" Classes="key" Text="Q  /  E" />
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="Previous / next image" />
+            <TextBlock Grid.Row="1" Classes="key" Text="W A S D" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="Pan" />
+            <TextBlock Grid.Row="2" Classes="key" Text="Z" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="Fill the screen" />
+            <TextBlock Grid.Row="3" Classes="key" Text="X" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="Fit to the screen" />
+            <TextBlock Grid.Row="4" Classes="key" Text="C" />
+            <TextBlock Grid.Row="4" Grid.Column="1" Text="True size" />
+            <TextBlock Grid.Row="5" Classes="key" Text="Esc" />
+            <TextBlock Grid.Row="5" Grid.Column="1" Text="Quit" />
+        </Grid>
+
+        <TextBlock Classes="note" Margin="0,16,0,0" FontSize="11"
+                   Text="PNG, JPEG, BMP, GIF, TIFF and WebP. Press Esc to close this window." />
+    </StackPanel>
+</Window>

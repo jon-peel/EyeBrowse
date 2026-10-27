@@ -35,7 +35,7 @@ public static class ImageLoader
     // ignores EXIF orientation and only ever decodes the first frame.
     static LoadedImage LoadWithSkia(string path)
     {
-        using var codec = SKCodec.Create(path) ?? throw new InvalidDataException($"cannot read image {path}");
+        using var codec = SKCodec.Create(path) ?? throw new InvalidDataException("not a readable image");
         var info = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
         var frameInfos = codec.FrameCount > 1 ? codec.FrameInfo : [];
 
@@ -123,14 +123,14 @@ public static class ImageLoader
     // Skia, which Avalonia decodes images with, has no TIFF support.
     static Bitmap LoadTiff(string path)
     {
-        using var tiff = Tiff.Open(path, "r") ?? throw new InvalidDataException($"cannot read TIFF {path}");
+        using var tiff = Tiff.Open(path, "r") ?? throw new InvalidDataException("not a readable TIFF");
         var width = tiff.GetField(TiffTag.IMAGEWIDTH)[0].ToInt();
         var height = tiff.GetField(TiffTag.IMAGELENGTH)[0].ToInt();
 
         // Each int is packed R | G << 8 | B << 16 | A << 24, i.e. RGBA bytes in memory.
         var raster = new int[width * height];
         if (!tiff.ReadRGBAImageOriented(width, height, raster, Orientation.TOPLEFT))
-            throw new InvalidDataException($"cannot decode TIFF {path}");
+            throw new InvalidDataException("cannot decode this TIFF");
 
         var handle = GCHandle.Alloc(raster, GCHandleType.Pinned);
         try
