@@ -26,6 +26,8 @@ $ErrorActionPreference = "Stop"
 if ($Version -notmatch '^\d+\.\d+\.\d+\.0$') {
     throw "Version must look like 1.2.3.0 (four numbers, the last 0, as the Store requires): '$Version'"
 }
+# The app itself (its About window) shows 1.2.3, as the other platforms' builds do.
+$appVersion = $Version -replace '\.0$', ''
 
 $root = Split-Path $PSScriptRoot -Parent
 $OutDir = [IO.Path]::GetFullPath((Join-Path (Get-Location) $OutDir))
@@ -49,7 +51,7 @@ foreach ($arch in $Architectures) {
     Write-Host "== ${arch}: publishing"
     # Not single-file: the package installs a folder, so nothing needs unpacking at start.
     dotnet publish (Join-Path $root "EyeBrowse.csproj") -c Release -r "win-$arch" --self-contained true `
-        -p:PublishTrimmed=true -p:DebugType=none -o $layout
+        -p:PublishTrimmed=true -p:DebugType=none "-p:Version=$appVersion" -o $layout
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed for $arch" }
     Get-ChildItem $layout -Filter *.pdb | Remove-Item
 

@@ -1,8 +1,11 @@
 # Windows package (MSIX)
 
 The `MSIX package` job in `.github/workflows/build.yml` builds `EyeBrowse_<version>.msixbundle`
-(x64 and ARM64) on every push, using `Build-Msix.ps1`. Tagged releases (`v1.2.3`) attach it
-to the GitHub release as version `1.2.3.0`; other builds are `0.0.<run number>.0`.
+(x64 and ARM64) on every push, using `Build-Msix.ps1` (pushes that only change documentation,
+`TestImages/` or `LICENSE` don't build). Tagged releases (`v1.2.3`) attach it to the GitHub
+release as version `1.2.3.0`; other builds are `0.0.<run number>.0`, kept as workflow run
+artifacts for 14 days. The app inside shows the same version without the last `.0` (`1.2.3`,
+like the other platforms' builds); a local `dotnet build` shows `0.0.0-dev`.
 
 Installing it adds EyeBrowse to the Start menu and to **Open with** for images (`.png .jpg
 .jpeg .bmp .gif .tif .tiff .webp`) and comic archives (`.cbz .cbr .cb7 .cbt .zip`). Windows
