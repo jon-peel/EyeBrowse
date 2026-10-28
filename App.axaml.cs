@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using EyeBrowse.ViewModels;
 using EyeBrowse.Views;
 
@@ -17,8 +18,19 @@ public class App : Application
         AvaloniaXamlLoader.Load(this);
     }
 
+    // Set while an error is on screen, so one that repeats doesn't pile up dialogs.
+    static bool _reportingError;
+
     public override void OnFrameworkInitializationCompleted()
     {
+        // A last resort: an unexpected error on the UI thread (including from async void
+        // handlers) is reported and EyeBrowse carries on, instead of vanishing.
+        Dispatcher.UIThread.UnhandledException += (_, e) =>
+        {
+            e.Handled = true;
+            ReportError(e.Exception);
+        };
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             desktop.MainWindow = CreateMainWindow(desktop.Args?.FirstOrDefault());
 
@@ -40,4 +52,26 @@ public class App : Application
             return new HelpWindow($"Couldn't open {path}: {e.Message}");
         }
     }
+
+    /// <summary>Shows an unexpected error over the main window. Nothing is written to disk.</summary>
+    public static void ReportError(Exception error) => Dispatcher.UIThread.Post(async () =>
+    {
+        if (_reportingError || Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime { MainWindow: { IsVisible: true } owner })
+            return;
+
+        _reportingError = true;
+        try
+        {
+            await new HelpWindow($"Something went wrong: {error.Message}") { WindowStartupLocation = WindowStartupLocation.CenterOwner }
+                .ShowDialog(owner);
+        }
+        catch
+        {
+            // Reporting failed too; it mustn't come back here as another error.
+        }
+        finally
+        {
+            _reportingError = false;
+        }
+    });
 }

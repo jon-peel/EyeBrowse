@@ -23,6 +23,15 @@ internal sealed class Program
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace()
-            .UseReactiveUI(_ => { });
+            .UseReactiveUI(rx => rx.WithExceptionHandler(new ErrorReporter()));
+    }
+
+    // An error that breaks a ReactiveUI pipeline (a command or derived property). ReactiveUI's
+    // default rethrows it on the UI thread wrapped in a generic message; this reports the cause.
+    sealed class ErrorReporter : IObserver<Exception>
+    {
+        public void OnNext(Exception value) => App.ReportError(value);
+        public void OnError(Exception error) => App.ReportError(error);
+        public void OnCompleted() { }
     }
 }
