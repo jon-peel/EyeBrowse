@@ -23,7 +23,25 @@ public partial class HelpWindow : Window
         ErrorPanel.IsVisible = error is not null;
         ErrorText.Text = error;
         _rows = [(KeepPanRow, KeepPanCheck, () => _settings.KeepPan, on => _settings.KeepPan = on)];
+        for (var i = 0; i < _rows.Length; i++)
+        {
+            var row = i;
+            _rows[i].row.PointerPressed += (_, e) =>
+            {
+                _selected = row;
+                Toggle();
+                ShowSettings();
+                e.Handled = true;
+            };
+        }
         ShowSettings();
+    }
+
+    void Toggle()
+    {
+        var (_, _, get, set) = _rows[_selected];
+        set(!get());
+        _settings.Save();
     }
 
     void ShowSettings()
@@ -53,11 +71,7 @@ public partial class HelpWindow : Window
             case Key.A: new AboutWindow().ShowDialog(this); break;
             case Key.Up: _selected = Math.Max(_selected - 1, 0); break;
             case Key.Down: _selected = Math.Min(_selected + 1, _rows.Length - 1); break;
-            case Key.Space:
-                var (_, _, get, set) = _rows[_selected];
-                set(!get());
-                _settings.Save();
-                break;
+            case Key.Space: Toggle(); break;
             default: return;
         }
         e.Handled = true;
