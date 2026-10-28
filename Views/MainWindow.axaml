@@ -8,9 +8,27 @@
         x:DataType="vm:MainWindowViewModel"
         Background="Black" Foreground="Chartreuse"
         Icon="/Assets/eyebrowse.ico"
-        Title="EyeBrowse">
+        Title="{Binding WindowTitle}">
 
     <Window.Styles>
+        <Style Selector="Panel.overlay">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Panel.overlay.hidden">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+        </Style>
+        <Style Selector="Border.plate">
+            <Setter Property="Background" Value="#CC000000" />
+            <Setter Property="BorderBrush" Value="#407FFF00" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="Padding" Value="9,5" />
+        </Style>
         <Style Selector="Border.modes">
             <Setter Property="Background" Value="#CC000000" />
             <Setter Property="BorderBrush" Value="#407FFF00" />
@@ -72,84 +90,92 @@
                 <Image Source="{Binding Picture2}" VerticalAlignment="Center"
                        Width="{Binding Picture2Size.Width}" Height="{Binding Picture2Size.Height}" />
             </StackPanel>
-            <StackPanel>
-                <TextBlock Text="{Binding Title}" />
-            </StackPanel>
+        </Canvas>
 
-            <!-- Scale modes, in keyboard order (Z X C); the current one is outlined. Icons are drawn on a 32x32 grid. -->
-            <Border Classes="modes" Canvas.Top="8" Canvas.Right="8">
-                <StackPanel Orientation="Horizontal" Spacing="2">
-                    <Border Classes="mode" Classes.on="{Binding IsFill}" ToolTip.Tip="Fill (Z)">
-                        <StackPanel>
-                            <Viewbox>
-                                <Canvas Width="32" Height="32">
-                                    <Path Classes="line" StrokeThickness="2.4" Data="M3 9 V3 H9 M23 3 H29 V9 M29 23 V29 H23 M9 29 H3 V23" />
-                                    <Rectangle Canvas.Left="6" Canvas.Top="6" Width="20" Height="20" Fill="Chartreuse" Opacity="0.85" />
-                                    <Path Stroke="Black" StrokeThickness="2" Data="M10 10 L4 4 M22 10 L28 4 M22 22 L28 28 M10 22 L4 28" />
-                                </Canvas>
-                            </Viewbox>
-                            <TextBlock Text="Z" />
-                        </StackPanel>
-                    </Border>
-                    <Border Classes="mode" Classes.on="{Binding IsFit}" ToolTip.Tip="Fit (X)">
-                        <StackPanel>
-                            <Viewbox>
-                                <Canvas Width="32" Height="32">
-                                    <Path Classes="line" StrokeThickness="2.4" Data="M3 9 V3 H9 M23 3 H29 V9 M29 23 V29 H23 M9 29 H3 V23" />
-                                    <Rectangle Classes="line" Canvas.Left="9" Canvas.Top="11" Width="14" Height="10" />
-                                    <Path Classes="line" Data="M12 8 L16 4.5 L20 8 M12 24 L16 27.5 L20 24" />
-                                </Canvas>
-                            </Viewbox>
-                            <TextBlock Text="X" />
-                        </StackPanel>
-                    </Border>
-                    <Border Classes="mode" Classes.on="{Binding IsTrueSize}" ToolTip.Tip="True size (C)">
-                        <StackPanel>
-                            <Viewbox>
-                                <Canvas Width="32" Height="32">
-                                    <Path Classes="line" Opacity="0.4" Data="M3 9 V3 H9 M23 3 H29 V9 M29 23 V29 H23 M9 29 H3 V23" />
-                                    <Rectangle Classes="line" Canvas.Left="9" Canvas.Top="9" Width="14" Height="14" />
-                                    <Ellipse Canvas.Left="14" Canvas.Top="14" Width="4" Height="4" Fill="Chartreuse" />
-                                </Canvas>
-                            </Viewbox>
-                            <TextBlock Text="C" />
-                        </StackPanel>
-                    </Border>
-                    <Border Classes="divider" />
-                    <Border Classes="mode" Classes.on="{Binding !Spread}" ToolTip.Tip="One page (1)">
-                        <StackPanel>
-                            <Viewbox>
-                                <Canvas Width="32" Height="32">
-                                    <Rectangle Classes="line" Canvas.Left="10" Canvas.Top="5" Width="12" Height="22" />
-                                </Canvas>
-                            </Viewbox>
-                            <TextBlock Text="1" />
-                        </StackPanel>
-                    </Border>
-                    <Border Classes="mode" Classes.on="{Binding Spread}" ToolTip.Tip="Two pages (2)">
-                        <StackPanel>
-                            <Viewbox>
-                                <Canvas Width="32" Height="32">
-                                    <Rectangle Classes="line" Canvas.Left="3" Canvas.Top="5" Width="12" Height="22" />
-                                    <Rectangle Classes="line" Canvas.Left="17" Canvas.Top="5" Width="12" Height="22" />
-                                </Canvas>
-                            </Viewbox>
-                            <TextBlock Text="2" />
-                        </StackPanel>
-                    </Border>
-                    <Border Classes="mode" Classes.on="{Binding RightToLeft}" ToolTip.Tip="Right to left (R)">
-                        <StackPanel>
-                            <Viewbox>
-                                <Canvas Width="32" Height="32">
-                                    <Path Classes="line" StrokeThickness="2.4" Data="M27 16 H6 M13 9 L6 16 L13 23" />
-                                </Canvas>
-                            </Viewbox>
-                            <TextBlock Text="R" />
-                        </StackPanel>
-                    </Border>
+        <!-- What's showing and the modes, over the image; Tab hides them for a clean view. -->
+        <Panel Classes="overlay" Classes.hidden="{Binding !ShowOverlay}">
+            <Border Classes="plate" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8">
+                <StackPanel Orientation="Horizontal" Spacing="14">
+                    <TextBlock Text="{Binding Counter}" Foreground="#DFFFBF" />
+                    <TextBlock Text="{Binding Caption}" />
+                    <TextBlock Text="{Binding Dimensions}" Foreground="#B8D99A" />
                 </StackPanel>
             </Border>
-        </Canvas>
+
+                <!-- Scale modes, in keyboard order (Z X C); the current one is outlined. Icons are drawn on a 32x32 grid. -->
+                <Border Classes="modes" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8">
+                    <StackPanel Orientation="Horizontal" Spacing="2">
+                        <Border Classes="mode" Classes.on="{Binding IsFill}" ToolTip.Tip="Fill (Z)">
+                            <StackPanel>
+                                <Viewbox>
+                                    <Canvas Width="32" Height="32">
+                                        <Path Classes="line" StrokeThickness="2.4" Data="M3 9 V3 H9 M23 3 H29 V9 M29 23 V29 H23 M9 29 H3 V23" />
+                                        <Rectangle Canvas.Left="6" Canvas.Top="6" Width="20" Height="20" Fill="Chartreuse" Opacity="0.85" />
+                                        <Path Stroke="Black" StrokeThickness="2" Data="M10 10 L4 4 M22 10 L28 4 M22 22 L28 28 M10 22 L4 28" />
+                                    </Canvas>
+                                </Viewbox>
+                                <TextBlock Text="Z" />
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="mode" Classes.on="{Binding IsFit}" ToolTip.Tip="Fit (X)">
+                            <StackPanel>
+                                <Viewbox>
+                                    <Canvas Width="32" Height="32">
+                                        <Path Classes="line" StrokeThickness="2.4" Data="M3 9 V3 H9 M23 3 H29 V9 M29 23 V29 H23 M9 29 H3 V23" />
+                                        <Rectangle Classes="line" Canvas.Left="9" Canvas.Top="11" Width="14" Height="10" />
+                                        <Path Classes="line" Data="M12 8 L16 4.5 L20 8 M12 24 L16 27.5 L20 24" />
+                                    </Canvas>
+                                </Viewbox>
+                                <TextBlock Text="X" />
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="mode" Classes.on="{Binding IsTrueSize}" ToolTip.Tip="True size (C)">
+                            <StackPanel>
+                                <Viewbox>
+                                    <Canvas Width="32" Height="32">
+                                        <Path Classes="line" Opacity="0.4" Data="M3 9 V3 H9 M23 3 H29 V9 M29 23 V29 H23 M9 29 H3 V23" />
+                                        <Rectangle Classes="line" Canvas.Left="9" Canvas.Top="9" Width="14" Height="14" />
+                                        <Ellipse Canvas.Left="14" Canvas.Top="14" Width="4" Height="4" Fill="Chartreuse" />
+                                    </Canvas>
+                                </Viewbox>
+                                <TextBlock Text="C" />
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="divider" />
+                        <Border Classes="mode" Classes.on="{Binding !Spread}" ToolTip.Tip="One page (1)">
+                            <StackPanel>
+                                <Viewbox>
+                                    <Canvas Width="32" Height="32">
+                                        <Rectangle Classes="line" Canvas.Left="10" Canvas.Top="5" Width="12" Height="22" />
+                                    </Canvas>
+                                </Viewbox>
+                                <TextBlock Text="1" />
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="mode" Classes.on="{Binding Spread}" ToolTip.Tip="Two pages (2)">
+                            <StackPanel>
+                                <Viewbox>
+                                    <Canvas Width="32" Height="32">
+                                        <Rectangle Classes="line" Canvas.Left="3" Canvas.Top="5" Width="12" Height="22" />
+                                        <Rectangle Classes="line" Canvas.Left="17" Canvas.Top="5" Width="12" Height="22" />
+                                    </Canvas>
+                                </Viewbox>
+                                <TextBlock Text="2" />
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="mode" Classes.on="{Binding RightToLeft}" ToolTip.Tip="Right to left (R)">
+                            <StackPanel>
+                                <Viewbox>
+                                    <Canvas Width="32" Height="32">
+                                        <Path Classes="line" StrokeThickness="2.4" Data="M27 16 H6 M13 9 L6 16 L13 23" />
+                                    </Canvas>
+                                </Viewbox>
+                                <TextBlock Text="R" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+        </Panel>
 
         <!-- While a slow image loads. -->
         <TextBlock Text="Loading…" IsVisible="{Binding IsLoading}"

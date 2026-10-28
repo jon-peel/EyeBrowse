@@ -57,7 +57,10 @@ public partial class MainWindowViewModel : ViewModelBase
     readonly ObservableAsPropertyHelper<Size> _picture2Size;
     readonly ObservableAsPropertyHelper<Size> _pictureSize;
     readonly ObservableAsPropertyHelper<Point> _position;
-    readonly ObservableAsPropertyHelper<string> _title;
+    readonly ObservableAsPropertyHelper<string> _counter;
+    readonly ObservableAsPropertyHelper<string> _caption;
+    readonly ObservableAsPropertyHelper<string?> _dimensions;
+    readonly ObservableAsPropertyHelper<string> _windowTitle;
     readonly ObservableAsPropertyHelper<Size> _windowSize;
 
 
@@ -88,9 +91,16 @@ public partial class MainWindowViewModel : ViewModelBase
             .Throttle(TimeSpan.FromMilliseconds(100))
             .ToProperty(this, x => x.WindowSize);
 
-        _title = this
-            .WhenAnyValue(x => x.Index, x => x.Spread, x => x.CoverAlone, (_, _, _) => MakeTitle())
-            .ToProperty(this, x => x.Title);
+        var visible = this.WhenAnyValue(x => x.Index, x => x.Spread, x => x.CoverAlone, (_, _, _) => PagesAt(Index));
+        _counter = visible
+            .Select(pages => $"{string.Join("–", pages.Select(page => page + 1))} / {_dirImages.Length}")
+            .ToProperty(this, x => x.Counter);
+        _caption = visible
+            .Select(pages => string.Join(" | ", pages.Select((page, i) => i == 0 ? _dirImages[page].label : _dirImages[page].name)))
+            .ToProperty(this, x => x.Caption);
+        _windowTitle = visible
+            .Select(pages => $"{_dirImages[pages[0]].name} — EyeBrowse")
+            .ToProperty(this, x => x.WindowTitle);
 
         // Pages are laid out left to right; manga reads right to left.
         _picture = this
@@ -110,6 +120,14 @@ public partial class MainWindowViewModel : ViewModelBase
         _animation.Tick += (_, _) => Elapsed = _sinceShown.Elapsed;
         this.WhenAnyValue(x => x.Shown).Subscribe(_ => StartAnimation());
         this.WhenAnyValue(x => x.Index, x => x.Spread, x => x.CoverAlone, (_, _, _) => RxVoid.Default).Subscribe(_ => ShowPages());
+
+        // Pixel size, for a single image (it explains what true size shows).
+        _dimensions = this
+            .WhenAnyValue(x => x.Picture, x => x.Picture2,
+                (picture, second) => picture is null || second is not null ? null : $"{picture.PixelSize.Width} × {picture.PixelSize.Height}")
+            .ToProperty(this, x => x.Dimensions);
+        ShowOverlay = true;
+        ToggleOverlayCommand = ReactiveCommand.Create(() => { ShowOverlay = !ShowOverlay; });
 
         _isFill = this.WhenAnyValue(x => x.Display).Select(x => x == Zoom.Fill).ToProperty(this, x => x.IsFill);
         _isFit = this.WhenAnyValue(x => x.Display).Select(x => x == Zoom.Fit).ToProperty(this, x => x.IsFit);
@@ -145,8 +163,13 @@ public partial class MainWindowViewModel : ViewModelBase
     // Time since the pages appeared, which picks each animated page's frame.
     [Reactive] private partial TimeSpan Elapsed { get; set; }
     [Reactive] public partial bool IsLoading { get; private set; }
+    [Reactive] public partial bool ShowOverlay { get; private set; }
 
-    public string Title => _title.Value;
+    // "3 / 12", the image's name (and the second page's, with two), and its pixel size.
+    public string Counter => _counter.Value;
+    public string Caption => _caption.Value;
+    public string? Dimensions => _dimensions.Value;
+    public string WindowTitle => _windowTitle.Value;
     // The left and right page; only Picture is used for a single page.
     public Bitmap? Picture => _picture.Value;
     public Bitmap? Picture2 => _picture2.Value;
@@ -166,6 +189,7 @@ public partial class MainWindowViewModel : ViewModelBase
     // false: one page; true: two pages, or if already showing two, shift the pairing.
     public ReactiveCommand<bool, RxVoid> PagesCommand { get; }
     public ReactiveCommand<RxVoid, RxVoid> ReadingDirectionCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ToggleOverlayCommand { get; }
     public ReactiveCommand<Size, Size> ResizeCommand { get; }
 
     /// <summary>The pages shown together with page <paramref name="index"/>, in page order.</summary>
@@ -219,14 +243,6 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         await Task.Delay(150);
         if (showing == _showing && Shown is null) IsLoading = true;
-    }
-
-    string MakeTitle()
-    {
-        var visible = PagesAt(Index);
-        var numbers = visible.Length == 1 ? $"{visible[0] + 1}" : $"{visible[0] + 1}–{visible[1] + 1}";
-        var names = string.Join(" | ", visible.Select((page, i) => i == 0 ? _dirImages[page].label : _dirImages[page].name));
-        return $"[{numbers}/{_dirImages.Length}] {names}";
     }
 
     static Page? OnScreen(Page[]? shown, bool rightToLeft, int slot)
@@ -375,7 +391,7 @@ public partial class MainWindowViewModel : ViewModelBase
         // start at the first image beside it.
         var index = Math.Max(Array.IndexOf(imagePaths, fullPath), 0);
         var images = imagePaths
-            .Select(path => (path, Path.GetFileName(path), (Func<LoadedImage>)(() => ImageLoader.Load(path))))
+            .Select(path => (Path.GetFileName(path), Path.GetFileName(path), (Func<LoadedImage>)(() => ImageLoader.Load(path))))
             .ToArray();
         return (index, images, false);
     }

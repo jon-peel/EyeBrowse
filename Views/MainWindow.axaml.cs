@@ -59,6 +59,10 @@ public partial class MainWindow : ReactiveWindow<MainWindowViewModel>
             case Key.R:
                 await vm.ReadingDirectionCommand.Execute();
                 return;
+            case Key.Tab:
+                e.Handled = true; // not focus navigation
+                await vm.ToggleOverlayCommand.Execute();
+                return;
         }
 
         var action = e.Key switch
