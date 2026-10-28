@@ -131,6 +131,48 @@ card 640 480 90  "broken"         "$E/broken/truncated.png"
 head -c 2000 "$E/broken/truncated.png" > "$E/broken/truncated.tmp"
 mv "$E/broken/truncated.tmp" "$E/broken/truncated.png"
 card 640 480 150 "next to broken" "$E/broken/fine.png"
+# Not images at all, despite the extension: EyeBrowse should show a message in their
+# place while browsing, and skip the macOS metadata file entirely.
+printf 'This is text, not a PNG image.\n' > "$E/broken/not-really.png"
+printf '\0\5\26\7\0\2\0\0Mac OS X        AppleDouble metadata, not an image\n' > "$E/broken/._fine.png"
+
+# edge/alpha/: the same half-transparent card in formats that store transparency
+# differently. On EyeBrowse's black background all of them should look identical.
+card 320 240 0 "PNG" "$E/alpha/half.png" -alpha set -channel A -evaluate set 50% +channel
+for alpha in unassociated associated; do
+    card 320 240 0 "RGBA ${alpha/associated/assoc.}" "$E/alpha/rgba-$alpha.tif" \
+        -define "tiff:alpha=$alpha" -compress LZW -alpha set -channel A -evaluate set 50% +channel
+done
+# ImageMagick won't write grey + alpha TIFFs (it always writes RGB), so these are
+# written directly: uncompressed, one strip, 8-bit grey + 8-bit alpha at 50%.
+GREY=$(mktemp -d)
+for alpha in unassociated associated; do
+    card 320 240 0 "grey ${alpha/associated/assoc.}" "$GREY/$alpha.png" -colorspace Gray
+    convert "$GREY/$alpha.png" -depth 8 GRAY:"$GREY/$alpha.raw"
+    python3 - "$GREY/$alpha.raw" "$alpha" "$E/alpha/grey-$alpha.tif" <<'PY'
+import struct, sys
+raw, kind, out = open(sys.argv[1], 'rb').read(), sys.argv[2], sys.argv[3]
+width, height, alpha = 320, 240, 128
+grey = raw if kind == 'unassociated' else bytes(g * alpha // 255 for g in raw)
+pixels = bytes(b for g in grey for b in (g, alpha))
+tags = [(256, width), (257, height), (258, (8, 8)), (259, 1), (262, 1), (273, None), (277, 2),
+        (278, height), (279, len(pixels)), (284, 1), (338, 1 if kind == 'associated' else 2)]
+data_offset = 8 + 2 + 12 * len(tags) + 4
+entries = b''
+for tag, value in tags:
+    if tag == 273:
+        value = data_offset
+    if isinstance(value, tuple):
+        entries += struct.pack('<HHIHH', tag, 3, 2, *value)
+    elif tag in (273, 279):
+        entries += struct.pack('<HHII', tag, 4, 1, value)
+    else:
+        entries += struct.pack('<HHIHH', tag, 3, 1, value, 0)
+header = b'II*\x00' + struct.pack('<IH', 8, len(tags))
+open(out, 'wb').write(header + entries + b'\0' * 4 + pixels)
+PY
+done
+rm -rf "$GREY"
 
 # archives/: zip and comic book (.cbz) archives, opened like an image. Pages are
 # stored in reverse order, so they only appear in order if EyeBrowse sorts them.

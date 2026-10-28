@@ -25,7 +25,8 @@ Keys: `q`/`e` previous/next, `w` `a` `s` `d` pan, `c` true size, `x` fit,
 | `edge/` | A transparent PNG (only the circle should show), an animated GIF (three frames, 0.7 s each), and file names with spaces and non-ASCII characters. |
 | `edge/exif/` | One JPEG per EXIF orientation, 1 to 8, each stored mirrored or rotated. All eight should look identical apart from colour: upright, with the corner labels in their corners. |
 | `edge/alone/` | A folder holding a single image: the counter should read `[1/1]`. |
-| `edge/broken/` | A truncated PNG next to a good one. |
+| `edge/broken/` | A truncated PNG (shows what survives), `not-really.png` (text with a .png name: stepping onto it should show "Can't show this image" in place of it, and the app should carry on), a good image, and a macOS `._fine.png` metadata file that must be skipped, so the counter shows 3 images. |
+| `edge/alpha/` | The same 50% transparent card as PNG and as TIFF in four variants: RGBA and grey, each with associated and unassociated alpha. On the black background all five should be equally bright (the grey ones are a different picture, but just as transparent). |
 
 ## Regenerating
 
