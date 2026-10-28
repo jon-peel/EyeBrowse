@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using ReactiveUI.Primitives;
 using Avalonia;
 using Avalonia.Media.Imaging;
@@ -38,8 +38,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     readonly DispatcherTimer _animation = new();
     readonly (string path, Func<LoadedImage> load)[] _dirImages;
-    // Decoded images are large, so only the current one and its neighbours are kept.
-    readonly Dictionary<int, Page> _loaded = new();
+    readonly PageCache _pages;
+    // Which way the reader is going (+1 or -1), so the next image is loaded first.
+    int _direction = 1;
     readonly ObservableAsPropertyHelper<string?> _error;
     readonly ObservableAsPropertyHelper<bool> _isFill;
     readonly ObservableAsPropertyHelper<bool> _isFit;
@@ -55,9 +56,11 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         Offset = (0, 0);
         (Index, _dirImages) = GetDirImageIndex(initialPath);
+        _pages = new(_dirImages.Select(x => x.load).ToArray());
         // An image opened directly that can't be shown is reported by the caller (the help
         // window); ones met while browsing are shown as a message in its place.
-        if (CurrentPage.Error is { } error)
+        Current = _pages.LoadNow(Index);
+        if (Current.Error is { } error)
             throw new InvalidDataException(error);
 
         Display = Zoom.True;
@@ -76,16 +79,17 @@ public partial class MainWindowViewModel : ViewModelBase
             .ToProperty(this, x => x.Title);
 
         _picture = this
-            .WhenAnyValue(x => x.Index, x => x.Frame, (_, frame) => CurrentPage.Image?.Frames[frame % CurrentPage.Image.Frames.Length])
+            .WhenAnyValue(x => x.Current, x => x.Frame, (page, frame) => page?.Image?.Frames[frame % page.Image.Frames.Length])
             .ToProperty(this, x => x.Picture);
 
         _error = this
-            .WhenAnyValue(x => x.Index)
-            .Select(_ => CurrentPage.Error is { } error ? $"Can't show this image: {error}" : null)
+            .WhenAnyValue(x => x.Current)
+            .Select(page => page?.Error is { } error ? $"Can't show this image: {error}" : null)
             .ToProperty(this, x => x.Error);
 
         _animation.Tick += (_, _) => NextFrame();
-        this.WhenAnyValue(x => x.Index).Subscribe(_ => StartAnimation());
+        this.WhenAnyValue(x => x.Current).Subscribe(_ => StartAnimation());
+        this.WhenAnyValue(x => x.Index).Subscribe(ShowPage);
 
         _isFill = this.WhenAnyValue(x => x.Display).Select(x => x == Zoom.Fill).ToProperty(this, x => x.IsFill);
         _isFit = this.WhenAnyValue(x => x.Display).Select(x => x == Zoom.Fit).ToProperty(this, x => x.IsFit);
@@ -106,8 +110,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [Reactive] private partial (int x, int y) Offset { get; set; }
     [Reactive] private partial Zoom Display { get; set; }
     [Reactive] private partial int Frame { get; set; }
-
-    Page CurrentPage => GetPage(Index);
+    // The image on screen: null while the one stepped to is still loading.
+    [Reactive] private partial Page? Current { get; set; }
+    [Reactive] public partial bool IsLoading { get; private set; }
 
     public string Title => _title.Value;
     public Bitmap? Picture => _picture.Value;
@@ -123,44 +128,52 @@ public partial class MainWindowViewModel : ViewModelBase
     public ReactiveCommand<Zoom, RxVoid> ZoomCommand { get; }
     public ReactiveCommand<Size, Size> ResizeCommand { get; }
 
-    Page GetPage(int index)
+    async void ShowPage(int index)
     {
-        if (!_loaded.TryGetValue(index, out var page))
-        {
-            try
-            {
-                page = new(_dirImages[index].load(), null);
-            }
-            catch (Exception e)
-            {
-                // A viewer shouldn't die on one bad file, whatever the decoder threw.
-                page = new(null, e.Message);
-            }
+        var page = _pages.Get(index);
+        // Keep this image and the ones either side, loading the next one first.
+        _pages.Keep([index, index + _direction, index - _direction]);
 
-            _loaded[index] = page;
+        if (!page.IsCompleted)
+        {
+            Current = null;
+            ShowLoadingIfSlow(index);
         }
 
-        foreach (var far in _loaded.Keys.Where(i => Math.Abs(i - index) > 1).ToArray())
+        Page loaded;
+        try
         {
-            foreach (var frame in _loaded[far].Image?.Frames ?? []) frame.Dispose();
-            _loaded.Remove(far);
+            loaded = await page;
+        }
+        catch (OperationCanceledException)
+        {
+            return; // stepped past it before it loaded
         }
 
-        return page;
+        if (index != Index) return;
+        Current = loaded;
+        IsLoading = false;
+    }
+
+    // A message only for a noticeable wait, so quick loads don't flicker.
+    async void ShowLoadingIfSlow(int index)
+    {
+        await Task.Delay(150);
+        if (index == Index && Current is null) IsLoading = true;
     }
 
     void StartAnimation()
     {
         _animation.Stop();
         Frame = 0;
-        if (CurrentPage.Image is not { IsAnimated: true } image) return;
+        if (Current?.Image is not { IsAnimated: true } image) return;
         _animation.Interval = image.Durations[0];
         _animation.Start();
     }
 
     void NextFrame()
     {
-        if (CurrentPage.Image is not { } image) return;
+        if (Current?.Image is not { } image) return;
         Frame = (Frame + 1) % image.Frames.Length;
         _animation.Interval = image.Durations[Frame];
     }
@@ -205,6 +218,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     void BrowseImage(Browse browse)
     {
+        _direction = browse == Browse.Previous ? -1 : 1;
         Index = browse switch
         {
             Browse.Previous when Index > 0 => Index - 1,
@@ -217,9 +231,6 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         Display = zoom;
     }
-
-    /// <summary>An image, or why it couldn't be loaded.</summary>
-    record Page(LoadedImage? Image, string? Error);
 
     void PanImage(Direction direction)
     {

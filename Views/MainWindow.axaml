@@ -108,6 +108,10 @@
             </Border>
         </Canvas>
 
+        <!-- While a slow image loads. -->
+        <TextBlock Text="Loading…" IsVisible="{Binding IsLoading}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#B8D99A" />
+
         <!-- In place of an image that couldn't be loaded. -->
         <TextBlock Text="{Binding Error}" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
                    HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="600" TextWrapping="Wrap"
