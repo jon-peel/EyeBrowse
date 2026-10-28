@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using ReactiveUI.Primitives;
 using ReactiveUI.Primitives.Signals;
 using Avalonia.Controls;
@@ -36,10 +37,25 @@ public partial class MainWindow : ReactiveWindow<MainWindowViewModel>
         await vm.ResizeCommand.Execute(e.ClientSize);
     }
 
+    // EyeBrowse is keyboard-only; a click explains how to use it.
+    protected override async void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        await ShowHelp();
+    }
+
     protected override async void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
         if (DataContext is not MainWindowViewModel vm) return;
+
+        // The arrow keys do nothing in EyeBrowse, so they show the help, as H, F1 and ? do.
+        // "?" is matched by the character typed, as its key differs between keyboard layouts.
+        if (e.Key is Key.H or Key.F1 or Key.Left or Key.Right or Key.Up or Key.Down || e.KeySymbol == "?")
+        {
+            await ShowHelp();
+            return;
+        }
 
         var action = e.Key switch
         {
@@ -66,5 +82,11 @@ public partial class MainWindow : ReactiveWindow<MainWindowViewModel>
             Close();
             return (null, null, null);
         }
+    }
+
+    // Modal, so keys go to the help window (Esc closes it) until it's closed.
+    Task ShowHelp()
+    {
+        return new HelpWindow { WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(this);
     }
 }

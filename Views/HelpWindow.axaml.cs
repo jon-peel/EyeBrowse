@@ -1,3 +1,4 @@
+using System;
 using Avalonia.Controls;
 using Avalonia.Input;
 
@@ -15,6 +16,14 @@ public partial class HelpWindow : Window
         InitializeComponent();
         ErrorPanel.IsVisible = error is not null;
         ErrorText.Text = error;
+    }
+
+    // Over the full-screen image window the help doesn't always get keyboard focus by
+    // itself, and Esc must reach it.
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+        Activate();
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
