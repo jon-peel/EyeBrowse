@@ -105,6 +105,13 @@ card 640 480 180 "frame 2 of 3"   "$E/animated-2.png"
 card 640 480 300 "frame 3 of 3"   "$E/animated-3.png"
 convert -delay 70 -loop 0 "$E"/animated-{1,2,3}.png "$E/animated.gif"
 rm "$E"/animated-{1,2,3}.png
+# Animated WebP whose frames each have their own duration, given in the caption.
+card 640 480 30  "WebP 1/3 · 0.3 s" "$E/animated-1.png"
+card 640 480 150 "WebP 2/3 · 0.6 s" "$E/animated-2.png"
+card 640 480 270 "WebP 3/3 · 1.2 s" "$E/animated-3.png"
+convert -loop 0 -delay 30 "$E/animated-1.png" -delay 60 "$E/animated-2.png" \
+    -delay 120 "$E/animated-3.png" -quality 85 "$E/animated.webp"
+rm "$E"/animated-{1,2,3}.png
 # edge/exif/: one JPEG per EXIF orientation, stored transformed so that it is
 # upright, and reads normally, only if that orientation is applied correctly.
 exif_inverse=("" "" -flop "-rotate 180" -flip -transpose "-rotate -90" -transverse "-rotate 90")
