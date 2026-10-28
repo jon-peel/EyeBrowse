@@ -68,9 +68,56 @@ jobs:
           name: EyeBrowse-${{ matrix.rid }}
           path: publish/EyeBrowse-${{ matrix.rid }}.${{ matrix.archive }}
 
+  msix:
+    name: MSIX package
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      # Signed only when the MSIX_CERTIFICATE secret is set (see Packaging/README.md);
+      # unsigned is what the Microsoft Store wants, as it signs packages itself.
+      - name: Build MSIX bundle
+        shell: pwsh
+        env:
+          MSIX_CERTIFICATE: ${{ secrets.MSIX_CERTIFICATE }}
+          MSIX_CERTIFICATE_PASSWORD: ${{ secrets.MSIX_CERTIFICATE_PASSWORD }}
+        run: |
+          # v1.2.3 tags become 1.2.3.0; other builds 0.0.<run number>.0.
+          $version = "${{ github.ref_name }}" -match '^v(\d+\.\d+\.\d+)$' ? "$($Matches[1]).0" : "0.0.${{ github.run_number }}.0"
+          $arguments = @{
+            Version = $version
+            IdentityName = "${{ vars.MSIX_IDENTITY_NAME || 'EyeBrowse' }}"
+            Publisher = "${{ vars.MSIX_PUBLISHER || 'CN=EyeBrowse Test' }}"
+            PublisherDisplayName = "${{ vars.MSIX_PUBLISHER_DISPLAY_NAME || 'EyeBrowse' }}"
+          }
+          if ($env:MSIX_CERTIFICATE) {
+            $pfx = Join-Path $env:RUNNER_TEMP "signing.pfx"
+            [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:MSIX_CERTIFICATE))
+            $arguments.CertificatePath = $pfx
+            $arguments.CertificatePassword = ConvertTo-SecureString $env:MSIX_CERTIFICATE_PASSWORD -AsPlainText -Force
+          }
+          ./Packaging/Build-Msix.ps1 @arguments
+          if ($env:MSIX_CERTIFICATE) {
+            # The public half, for testers to trust before installing.
+            $certificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new($pfx, $env:MSIX_CERTIFICATE_PASSWORD)
+            [IO.File]::WriteAllBytes("msix/EyeBrowse.cer", $certificate.Export("Cert"))
+            Remove-Item $pfx
+          }
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: EyeBrowse-msix
+          path: |
+            msix/*.msixbundle
+            msix/*.cer
+
   release:
     name: Release
-    needs: build
+    needs: [ build, msix ]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
