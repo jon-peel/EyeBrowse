@@ -1,12 +1,18 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Input;
+using EyeBrowse.Models;
 
 namespace EyeBrowse.Views;
 
-/// <summary>Usage and keys, shown when EyeBrowse has no image to open.</summary>
+/// <summary>Usage, keys and settings; also shown when EyeBrowse has no image to open.</summary>
 public partial class HelpWindow : Window
 {
+    readonly Settings _settings = Settings.Current;
+    // Each setting's row, its tick, and how to read and change it.
+    readonly (Border row, Control check, Func<bool> get, Action<bool> set)[] _rows;
+    int _selected;
+
     public HelpWindow() : this(null)
     {
     }
@@ -16,6 +22,17 @@ public partial class HelpWindow : Window
         InitializeComponent();
         ErrorPanel.IsVisible = error is not null;
         ErrorText.Text = error;
+        _rows = [(KeepPanRow, KeepPanCheck, () => _settings.KeepPan, on => _settings.KeepPan = on)];
+        ShowSettings();
+    }
+
+    void ShowSettings()
+    {
+        for (var i = 0; i < _rows.Length; i++)
+        {
+            _rows[i].row.Classes.Set("selected", i == _selected);
+            _rows[i].check.IsVisible = _rows[i].get();
+        }
     }
 
     // Over the full-screen image window the help doesn't always get keyboard focus by
@@ -29,8 +46,21 @@ public partial class HelpWindow : Window
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (e.Key == Key.Escape) Close();
-        // A only here: in the image window it pans.
-        else if (e.Key == Key.A) new AboutWindow().ShowDialog(this);
+        switch (e.Key)
+        {
+            case Key.Escape: Close(); break;
+            // A only here: in the image window it pans.
+            case Key.A: new AboutWindow().ShowDialog(this); break;
+            case Key.Up: _selected = Math.Max(_selected - 1, 0); break;
+            case Key.Down: _selected = Math.Min(_selected + 1, _rows.Length - 1); break;
+            case Key.Space:
+                var (_, _, get, set) = _rows[_selected];
+                set(!get());
+                _settings.Save();
+                break;
+            default: return;
+        }
+        e.Handled = true;
+        ShowSettings();
     }
 }

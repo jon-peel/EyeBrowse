@@ -44,6 +44,9 @@ public partial class MainWindowViewModel : ViewModelBase
     readonly Stopwatch _sinceShown = new();
     readonly (string label, string name, Func<LoadedImage> load)[] _dirImages;
     readonly PageCache _pages;
+    readonly Settings _settings = Settings.Current;
+    // A comic archive rather than a folder: each remembers one or two pages separately.
+    readonly bool _isComic;
     // Which way the reader is going (+1 or -1), so the next pages are loaded first.
     int _direction = 1;
     // Bumped whenever what should be on screen changes, so a slow load that finishes
@@ -72,7 +75,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         Offset = (0, 0);
         bool rightToLeft;
-        (Index, _dirImages, rightToLeft) = GetDirImageIndex(initialPath);
+        (Index, _dirImages, rightToLeft, _isComic) = GetDirImageIndex(initialPath);
         RightToLeft = rightToLeft;
         CoverAlone = true;
         _pages = new(_dirImages.Select(x => x.load).ToArray());
@@ -83,7 +86,10 @@ public partial class MainWindowViewModel : ViewModelBase
             throw new InvalidDataException(error);
         Shown = [first];
 
-        Display = Zoom.True;
+        // The modes as they were last left.
+        Spread = _isComic ? _settings.ComicSpread : _settings.FolderSpread;
+        Index = PagesAt(Index)[0];
+        Display = _settings.Zoom;
         BrowseCommand = ReactiveCommand.Create<Browse>(BrowseImage);
         PanCommand = ReactiveCommand.Create<Direction>(PanImage);
         ZoomCommand = ReactiveCommand.Create<Zoom>(ZoomImage);
@@ -132,8 +138,12 @@ public partial class MainWindowViewModel : ViewModelBase
             .WhenAnyValue(x => x.Picture, x => x.Picture2,
                 (picture, second) => picture is null || second is not null ? null : $"{picture.PixelSize.Width} × {picture.PixelSize.Height}")
             .ToProperty(this, x => x.Dimensions);
-        ShowOverlay = true;
-        ToggleOverlayCommand = ReactiveCommand.Create(() => { ShowOverlay = !ShowOverlay; });
+        ShowOverlay = _settings.ShowOverlay;
+        ToggleOverlayCommand = ReactiveCommand.Create(() =>
+        {
+            ShowOverlay = _settings.ShowOverlay = !ShowOverlay;
+            _settings.Save();
+        });
 
         _isFill = this.WhenAnyValue(x => x.Display).Select(x => x == Zoom.Fill).ToProperty(this, x => x.IsFill);
         _isFit = this.WhenAnyValue(x => x.Display).Select(x => x == Zoom.Fit).ToProperty(this, x => x.IsFit);
@@ -338,14 +348,22 @@ public partial class MainWindowViewModel : ViewModelBase
         _direction = browse is Browse.Previous or Browse.Last ? -1 : 1;
         if (browse is Browse.First or Browse.Last)
         {
-            Index = PagesAt(browse == Browse.First ? 0 : _dirImages.Length - 1)[0];
+            TurnTo(PagesAt(browse == Browse.First ? 0 : _dirImages.Length - 1)[0]);
             return;
         }
 
         var visible = PagesAt(Index);
         var next = browse == Browse.Previous ? visible[0] - 1 : visible[^1] + 1;
         if (next >= 0 && next < _dirImages.Length)
-            Index = PagesAt(next)[0];
+            TurnTo(PagesAt(next)[0]);
+    }
+
+    // Unless the pan is kept, a new page starts centred, as when EyeBrowse opens.
+    void TurnTo(int index)
+    {
+        if (index == Index) return;
+        Index = index;
+        if (!_settings.KeepPan) Offset = (0, 0);
     }
 
     void SetSpread(bool spread)
@@ -355,11 +373,15 @@ public partial class MainWindowViewModel : ViewModelBase
             CoverAlone = !CoverAlone;
         Spread = spread;
         Index = PagesAt(Index)[0];
+        if (_isComic) _settings.ComicSpread = spread;
+        else _settings.FolderSpread = spread;
+        _settings.Save();
     }
 
     void ZoomImage(Zoom zoom)
     {
-        Display = zoom;
+        Display = _settings.Zoom = zoom;
+        _settings.Save();
     }
 
     void PanImage(Direction direction)
@@ -374,7 +396,7 @@ public partial class MainWindowViewModel : ViewModelBase
         };
     }
 
-    static (int index, (string label, string name, Func<LoadedImage> load)[] dirImages, bool rightToLeft) GetDirImageIndex(string initialPath)
+    static (int index, (string label, string name, Func<LoadedImage> load)[] dirImages, bool rightToLeft, bool isComic) GetDirImageIndex(string initialPath)
     {
         var fullPath = Path.GetFullPath(initialPath);
         if (!File.Exists(fullPath) && !Directory.Exists(fullPath))
@@ -391,7 +413,7 @@ public partial class MainWindowViewModel : ViewModelBase
             var archiveName = Path.GetFileName(fullPath);
             return (0, pages
                 .Select(page => ($"{archiveName} › {page}", Path.GetFileName(page), (Func<LoadedImage>)(() => ImageArchive.Load(fullPath, page))))
-                .ToArray(), ImageArchive.IsRightToLeft(fullPath));
+                .ToArray(), ImageArchive.IsRightToLeft(fullPath), true);
         }
 
         // A folder opens at its first image.
@@ -409,6 +431,6 @@ public partial class MainWindowViewModel : ViewModelBase
         var images = imagePaths
             .Select(path => (Path.GetFileName(path), Path.GetFileName(path), (Func<LoadedImage>)(() => ImageLoader.Load(path))))
             .ToArray();
-        return (index, images, false);
+        return (index, images, false, false);
     }
 }

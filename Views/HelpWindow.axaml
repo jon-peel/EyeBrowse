@@ -26,6 +26,25 @@
             <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="Foreground" Value="#DFFFBF" />
         </Style>
+        <!-- A setting: outlined when it's the one Space changes, like the overlay's modes. -->
+        <Style Selector="Border.setting">
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="BorderThickness" Value="1.5" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+        <Style Selector="Border.setting.selected">
+            <Setter Property="BorderBrush" Value="Chartreuse" />
+            <Setter Property="Background" Value="#247FFF00" />
+        </Style>
+        <Style Selector="Border.box">
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="BorderBrush" Value="Chartreuse" />
+            <Setter Property="BorderThickness" Value="1.5" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
     </Window.Styles>
 
     <StackPanel Margin="24,20">
@@ -76,6 +95,18 @@
         </Grid>
         <TextBlock Classes="note" Margin="0,8,0,0"
                    Text="EyeBrowse is keyboard-only: the arrow keys and mouse clicks just open this help." />
+
+        <TextBlock Classes="heading" Text="Settings" />
+        <Border x:Name="KeepPanRow" Classes="setting selected">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="box">
+                    <Path x:Name="KeepPanCheck" Stroke="Chartreuse" StrokeThickness="2" Data="M3 7 L6 10 L11 3" />
+                </Border>
+                <TextBlock Text="Keep the pan position when changing page" />
+            </StackPanel>
+        </Border>
+        <TextBlock Classes="note" Margin="0,6,0,0"
+                   Text="Space changes the outlined setting. Z X C, 1 2 (for comics and folders apart) and Tab are remembered too. EyeBrowse keeps no history of the files you open." />
 
         <TextBlock Classes="note" Margin="0,16,0,0" FontSize="11"
                    Text="Images: PNG, JPEG, BMP, GIF, TIFF and WebP. Archives: .cbz and .zip, and .cbr, .cb7 or .cbt files that are really zips. Press Esc to close this window. Press A for About and licences." />
