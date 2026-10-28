@@ -37,7 +37,7 @@
             <TextBlock Margin="0,12,0,0" Text="A full-screen, keyboard-driven image and comic book viewer." />
 
             <TextBlock Classes="heading" Text="Licence" />
-            <TextBlock Text="EyeBrowse is free software under the GNU General Public License, version 3 (GPL-3.0). It comes with no warranty." />
+            <TextBlock Text="EyeBrowse is open source, under the GNU General Public License, version 3 (GPL-3.0). It comes with no warranty." />
             <TextBlock Text="https://github.com/jon-peel/EyeBrowse" Margin="0,4,0,0" Foreground="#DFFFBF" />
 
             <TextBlock Classes="heading" Text="Built with" />
