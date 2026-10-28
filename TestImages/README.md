@@ -13,7 +13,8 @@ If a border or corner label is missing, the image is cropped; if the crosshair
 is off-centre, it is mispositioned.
 
 Keys: `q`/`e` previous/next, `w` `a` `s` `d` pan, `c` true size, `x` fit,
-`z` fill, `Esc` quit.
+`z` fill, `1`/`2` one or two pages (`2` again shifts the pairs), `r` right to left,
+`h` help, `Esc` quit.
 
 | Folder | What it tests |
 |---|---|
@@ -21,7 +22,7 @@ Keys: `q`/`e` previous/next, `w` `a` `s` `d` pan, `c` true size, `x` fit,
 | `sizes/` | From 1x1 and 16x16 up to 8000x6000, with square, panorama (6000x600), tall (600x4000) and portrait shapes, for true size, fit, fill and panning. |
 | `many/` | 60 numbered 400x300 cards, `001` to `060`, for stepping through a long folder. The colour shifts with each one, so a skipped or repeated image stands out. |
 | `ordering/` | `page 1`, `page 2`, `Page 3`, `page 10`, `page 20`, `zebra`: names that sort wrongly as plain text. Each caption gives the position it should have (`1 of 6` … `6 of 6`), with numbers in natural order and case ignored. |
-| `archives/` | Zip and comic book archives; open one like an image. Pages are stored out of order, so they only appear in order if EyeBrowse sorts them. `comic.cbz`: 12 pages, `page1` … `page12`, plus `ComicInfo.xml`. `manga.cbz`: chapters 1, 2 and 10 in subfolders, plus a macOS `__MACOSX/._01.jpg` junk file that must be skipped (9 pages). `mixed-formats.zip`: one page per format, including TIFF and an animated GIF. `UPPER-CASE.CBZ`: upper-case extension. `no-images.cbz` and `broken.cbz` should open the help window with an explanation. `really-a-zip.cbr`, `.cb7` and `.cbt` are zips with comic extensions for other formats, and should open. `real-rar.cbr`, `rar-named.cbz`, `real-7zip.cb7` and `real-tar.cbt` aren't zips and should open the help window saying which format they are. The RAR and 7-Zip files are stubs holding only the format's signature. |
+| `archives/` | Zip and comic book archives; open one like an image. Pages are stored out of order, so they only appear in order if EyeBrowse sorts them. `comic.cbz`: 12 pages, `page1` … `page12`, plus `ComicInfo.xml`. `manga.cbz`: chapters 1, 2 and 10 in subfolders, plus a macOS `__MACOSX/._01.jpg` junk file that must be skipped (9 pages). `mixed-formats.zip`: one page per format, including TIFF and an animated GIF. `UPPER-CASE.CBZ`: upper-case extension. `no-images.cbz` and `broken.cbz` should open the help window with an explanation. `really-a-zip.cbr`, `.cb7` and `.cbt` are zips with comic extensions for other formats, and should open. `real-rar.cbr`, `rar-named.cbz`, `real-7zip.cb7` and `real-tar.cbt` aren't zips and should open the help window saying which format they are. The RAR and 7-Zip files are stubs holding only the format's signature. For two-page mode (key 2): `spread.cbz` pairs as [1] [2-3] [4-5] [6-7] … [10-11]; page 4 is shorter (centred), and page 6 is a wide double-page image that throws the pairing out, so press 2 again to shift the pairs ([5-6]). `manga-rtl.cbz` is marked right-to-left in its ComicInfo.xml: in two-page mode the page captioned "left" should be on the left; R swaps the sides. |
 | `edge/` | A transparent PNG (only the circle should show), an animated GIF (three frames, 0.7 s each), and file names with spaces and non-ASCII characters. |
 | `edge/exif/` | One JPEG per EXIF orientation, 1 to 8, each stored mirrored or rotated. All eight should look identical apart from colour: upright, with the corner labels in their corners. |
 | `edge/alone/` | A folder holding a single image: the counter should read `[1/1]`. |

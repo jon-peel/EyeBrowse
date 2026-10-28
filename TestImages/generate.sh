@@ -264,6 +264,38 @@ with tarfile.open(os.path.join(out, 'real-tar.cbt'), 'w', format=tarfile.USTAR_F
     info.size, info.mtime = len(data), 1767225600
     t.addfile(info, io.BytesIO(data))
 PY
+# Two-page spreads. spread.cbz: a cover, then pages that pair 2-3, 4-5; page 4 is
+# shorter, and page 6 is a wide double-page image, which throws the pairing out by one
+# until 2 is pressed again. manga-rtl.cbz is marked right-to-left in ComicInfo.xml; each
+# caption says which side its page belongs on when two pages are shown.
+for n in $(seq 1 11); do
+    case $n in
+        1) card 600 900  0             "Cover"        "$STAGE/spread/$(printf %02d $n).jpg" -quality 85 ;;
+        4) card 600 800  $(( n * 33 )) "Page 4 short" "$STAGE/spread/$(printf %02d $n).jpg" -quality 85 ;;
+        6) card 1200 900 $(( n * 33 )) "Page 6 wide"  "$STAGE/spread/$(printf %02d $n).jpg" -quality 85 ;;
+        *) card 600 900  $(( n * 33 )) "Page $n"      "$STAGE/spread/$(printf %02d $n).jpg" -quality 85 ;;
+    esac
+done
+card 600 900 0   "1 cover"   "$STAGE/manga-rtl/1.jpg" -quality 85
+card 600 900 60  "2 right"   "$STAGE/manga-rtl/2.jpg" -quality 85
+card 600 900 120 "3 left"    "$STAGE/manga-rtl/3.jpg" -quality 85
+card 600 900 180 "4 right"   "$STAGE/manga-rtl/4.jpg" -quality 85
+card 600 900 240 "5 left"    "$STAGE/manga-rtl/5.jpg" -quality 85
+python3 - "$STAGE" "$A" <<'PY'
+import os, sys, zipfile
+stage, out = sys.argv[1], sys.argv[2]
+STAMP = (2026, 1, 1, 0, 0, 0)
+def build(name, folder, extra=()):
+    root = os.path.join(stage, folder)
+    with zipfile.ZipFile(os.path.join(out, name), 'w') as z:
+        for n in sorted(os.listdir(root), reverse=True):
+            z.writestr(zipfile.ZipInfo(n, STAMP), open(os.path.join(root, n), 'rb').read())
+        for arcname, data in extra:
+            z.writestr(zipfile.ZipInfo(arcname, STAMP), data)
+build('spread.cbz', 'spread')
+build('manga-rtl.cbz', 'manga-rtl', [('ComicInfo.xml',
+    b'<?xml version="1.0"?>\n<ComicInfo><Title>Right to left</Title><Manga>YesAndRightToLeft</Manga></ComicInfo>\n')])
+PY
 rm -rf "$STAGE"
 
 echo "Generated $(find "$ROOT" -type f ! -name generate.sh ! -name README.md | wc -l) files," \
