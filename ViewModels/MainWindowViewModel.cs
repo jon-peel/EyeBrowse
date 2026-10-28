@@ -61,6 +61,8 @@ public partial class MainWindowViewModel : ViewModelBase
     readonly ObservableAsPropertyHelper<string> _caption;
     readonly ObservableAsPropertyHelper<string?> _dimensions;
     readonly ObservableAsPropertyHelper<string> _windowTitle;
+    readonly ObservableAsPropertyHelper<bool> _canGoBack;
+    readonly ObservableAsPropertyHelper<bool> _canGoForward;
     readonly ObservableAsPropertyHelper<Size> _windowSize;
 
 
@@ -98,6 +100,8 @@ public partial class MainWindowViewModel : ViewModelBase
         _caption = visible
             .Select(pages => string.Join(" | ", pages.Select((page, i) => i == 0 ? _dirImages[page].label : _dirImages[page].name)))
             .ToProperty(this, x => x.Caption);
+        _canGoBack = visible.Select(pages => pages[0] > 0).ToProperty(this, x => x.CanGoBack);
+        _canGoForward = visible.Select(pages => pages[^1] < _dirImages.Length - 1).ToProperty(this, x => x.CanGoForward);
         _windowTitle = visible
             .Select(pages => $"{_dirImages[pages[0]].name} — EyeBrowse")
             .ToProperty(this, x => x.WindowTitle);
@@ -170,6 +174,9 @@ public partial class MainWindowViewModel : ViewModelBase
     public string Caption => _caption.Value;
     public string? Dimensions => _dimensions.Value;
     public string WindowTitle => _windowTitle.Value;
+    // Whether Q / E have anywhere to go.
+    public bool CanGoBack => _canGoBack.Value;
+    public bool CanGoForward => _canGoForward.Value;
     // The left and right page; only Picture is used for a single page.
     public Bitmap? Picture => _picture.Value;
     public Bitmap? Picture2 => _picture2.Value;
