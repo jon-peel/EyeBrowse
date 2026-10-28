@@ -30,5 +30,7 @@ public partial class HelpWindow : Window
     {
         base.OnKeyDown(e);
         if (e.Key == Key.Escape) Close();
+        // A only here: in the image window it pans.
+        else if (e.Key == Key.A) new AboutWindow().ShowDialog(this);
     }
 }

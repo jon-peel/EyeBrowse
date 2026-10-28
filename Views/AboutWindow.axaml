@@ -1,0 +1,88 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="EyeBrowse.Views.AboutWindow"
+        Background="Black" Foreground="Chartreuse"
+        Icon="/Assets/eyebrowse.ico"
+        Title="About EyeBrowse"
+        Width="460" Height="680" CanResize="False"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Styles>
+        <Style Selector="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style Selector="TextBlock.heading">
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="#DFFFBF" />
+            <Setter Property="Margin" Value="0,14,0,4" />
+        </Style>
+        <Style Selector="TextBlock.note">
+            <Setter Property="Foreground" Value="#B8D99A" />
+        </Style>
+        <Style Selector="Grid.parts TextBlock">
+            <Setter Property="Margin" Value="0,1" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+    </Window.Styles>
+
+    <DockPanel Margin="24,20">
+        <StackPanel DockPanel.Dock="Top">
+            <StackPanel Orientation="Horizontal" Spacing="14">
+                <Image Source="/Assets/eyebrowse-512.png" Width="56" Height="56" />
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="EyeBrowse" FontSize="22" FontWeight="Bold" />
+                    <TextBlock x:Name="VersionText" Classes="note" />
+                </StackPanel>
+            </StackPanel>
+            <TextBlock Margin="0,12,0,0" Text="A full-screen, keyboard-driven image and comic book viewer." />
+
+            <TextBlock Classes="heading" Text="Licence" />
+            <TextBlock Text="EyeBrowse is free software under the GNU General Public License, version 3 (GPL-3.0). It comes with no warranty." />
+            <TextBlock Text="https://github.com/jon-peel/EyeBrowse" Margin="0,4,0,0" Foreground="#DFFFBF" />
+
+            <TextBlock Classes="heading" Text="Built with" />
+            <Grid Classes="parts" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                <TextBlock Grid.Row="0" Text="Avalonia, MicroCom" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="MIT" />
+                <TextBlock Grid.Row="1" Text="SkiaSharp, HarfBuzzSharp (with Skia, HarfBuzz)" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="MIT, BSD and others" />
+                <TextBlock Grid.Row="2" Text="ANGLE (Windows)" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="BSD-3-Clause" />
+                <TextBlock Grid.Row="3" Text="ReactiveUI, Splat" />
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="MIT" />
+                <TextBlock Grid.Row="4" Text="Tmds.DBus.Protocol (Linux)" />
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="MIT" />
+                <TextBlock Grid.Row="5" Text="BitMiracle LibTiff.Net" />
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="BSD-3-Clause" />
+                <TextBlock Grid.Row="6" Text="Inter font" />
+                <TextBlock Grid.Row="6" Grid.Column="1" Text="SIL OFL 1.1" />
+                <TextBlock Grid.Row="7" Text=".NET runtime" />
+                <TextBlock Grid.Row="7" Grid.Column="1" Text="MIT and others" />
+            </Grid>
+
+            <TextBlock Classes="heading" Text="Third-party notices" />
+        </StackPanel>
+
+        <TextBlock DockPanel.Dock="Bottom" Classes="note" Margin="0,10,0,0" FontSize="11"
+                   Text="Up, Down, Page Up and Page Down scroll the notices. Press Esc to close this window." />
+
+        <Border BorderBrush="#4D7A1F" BorderThickness="1" Padding="8,6">
+            <!-- One item per paragraph, so only those on screen are laid out: as a single
+                 TextBlock the notices take about a second to appear. -->
+            <ScrollViewer x:Name="Notices" Focusable="False">
+                <ItemsControl x:Name="NoticesList">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VirtualizingStackPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <TextBlock Classes="note" FontSize="11" Margin="0,0,0,8" Text="{Binding}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+    </DockPanel>
+</Window>
