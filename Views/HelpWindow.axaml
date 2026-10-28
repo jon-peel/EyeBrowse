@@ -52,7 +52,7 @@
         <TextBlock Classes="heading" Text="Keys" />
         <Grid Classes="keys" ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Classes="key" Text="Q  /  E" />
-            <TextBlock Grid.Row="0" Grid.Column="1" Text="Previous / next image (or pair)" />
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="Previous / next image (or pair); with Shift, first / last" />
             <TextBlock Grid.Row="1" Classes="key" Text="W A S D" />
             <TextBlock Grid.Row="1" Grid.Column="1" Text="Pan" />
             <TextBlock Grid.Row="2" Classes="key" Text="Z" />

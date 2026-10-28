@@ -20,7 +20,9 @@ public partial class MainWindowViewModel : ViewModelBase
     public enum Browse
     {
         Previous,
-        Next
+        Next,
+        First,
+        Last
     }
 
     public enum Direction
@@ -332,7 +334,14 @@ public partial class MainWindowViewModel : ViewModelBase
 
     void BrowseImage(Browse browse)
     {
-        _direction = browse == Browse.Previous ? -1 : 1;
+        // From the first page the reader can only go forward, and from the last only back.
+        _direction = browse is Browse.Previous or Browse.Last ? -1 : 1;
+        if (browse is Browse.First or Browse.Last)
+        {
+            Index = PagesAt(browse == Browse.First ? 0 : _dirImages.Length - 1)[0];
+            return;
+        }
+
         var visible = PagesAt(Index);
         var next = browse == Browse.Previous ? visible[0] - 1 : visible[^1] + 1;
         if (next >= 0 && next < _dirImages.Length)

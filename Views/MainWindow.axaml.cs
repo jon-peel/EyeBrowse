@@ -67,6 +67,8 @@ public partial class MainWindow : ReactiveWindow<MainWindowViewModel>
 
         var action = e.Key switch
         {
+            Key.Q when e.KeyModifiers.HasFlag(KeyModifiers.Shift) => (Browse.First, null, null),
+            Key.E when e.KeyModifiers.HasFlag(KeyModifiers.Shift) => (Browse.Last, null, null),
             Key.Q => (Browse.Previous, null, null),
             Key.E => (Browse.Next, null, null),
             Key.W => (null, Direction.Up, null),
