@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -36,11 +37,14 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     readonly DispatcherTimer _animation = new();
-    readonly (string path, Lazy<LoadedImage> image)[] _dirImages;
+    readonly (string path, Func<LoadedImage> load)[] _dirImages;
+    // Decoded images are large, so only the current one and its neighbours are kept.
+    readonly Dictionary<int, Page> _loaded = new();
+    readonly ObservableAsPropertyHelper<string?> _error;
     readonly ObservableAsPropertyHelper<bool> _isFill;
     readonly ObservableAsPropertyHelper<bool> _isFit;
     readonly ObservableAsPropertyHelper<bool> _isTrueSize;
-    readonly ObservableAsPropertyHelper<Bitmap> _picture;
+    readonly ObservableAsPropertyHelper<Bitmap?> _picture;
     readonly ObservableAsPropertyHelper<Size> _pictureSize;
     readonly ObservableAsPropertyHelper<Point> _position;
     readonly ObservableAsPropertyHelper<string> _title;
@@ -51,6 +55,10 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         Offset = (0, 0);
         (Index, _dirImages) = GetDirImageIndex(initialPath);
+        // An image opened directly that can't be shown is reported by the caller (the help
+        // window); ones met while browsing are shown as a message in its place.
+        if (CurrentPage.Error is { } error)
+            throw new InvalidDataException(error);
 
         Display = Zoom.True;
         BrowseCommand = ReactiveCommand.Create<Browse>(BrowseImage);
@@ -68,8 +76,13 @@ public partial class MainWindowViewModel : ViewModelBase
             .ToProperty(this, x => x.Title);
 
         _picture = this
-            .WhenAnyValue(x => x.Index, x => x.Frame, (_, frame) => CurrentImage.Frames[frame % CurrentImage.Frames.Length])
+            .WhenAnyValue(x => x.Index, x => x.Frame, (_, frame) => CurrentPage.Image?.Frames[frame % CurrentPage.Image.Frames.Length])
             .ToProperty(this, x => x.Picture);
+
+        _error = this
+            .WhenAnyValue(x => x.Index)
+            .Select(_ => CurrentPage.Error is { } error ? $"Can't show this image: {error}" : null)
+            .ToProperty(this, x => x.Error);
 
         _animation.Tick += (_, _) => NextFrame();
         this.WhenAnyValue(x => x.Index).Subscribe(_ => StartAnimation());
@@ -94,10 +107,11 @@ public partial class MainWindowViewModel : ViewModelBase
     [Reactive] private partial Zoom Display { get; set; }
     [Reactive] private partial int Frame { get; set; }
 
-    LoadedImage CurrentImage => _dirImages[Index].image.Value;
+    Page CurrentPage => GetPage(Index);
 
     public string Title => _title.Value;
-    public Bitmap Picture => _picture.Value;
+    public Bitmap? Picture => _picture.Value;
+    public string? Error => _error.Value;
     public bool IsFill => _isFill.Value;
     public bool IsFit => _isFit.Value;
     public bool IsTrueSize => _isTrueSize.Value;
@@ -109,19 +123,46 @@ public partial class MainWindowViewModel : ViewModelBase
     public ReactiveCommand<Zoom, RxVoid> ZoomCommand { get; }
     public ReactiveCommand<Size, Size> ResizeCommand { get; }
 
+    Page GetPage(int index)
+    {
+        if (!_loaded.TryGetValue(index, out var page))
+        {
+            try
+            {
+                page = new(_dirImages[index].load(), null);
+            }
+            catch (Exception e)
+            {
+                // A viewer shouldn't die on one bad file, whatever the decoder threw.
+                page = new(null, e.Message);
+            }
+
+            _loaded[index] = page;
+        }
+
+        foreach (var far in _loaded.Keys.Where(i => Math.Abs(i - index) > 1).ToArray())
+        {
+            foreach (var frame in _loaded[far].Image?.Frames ?? []) frame.Dispose();
+            _loaded.Remove(far);
+        }
+
+        return page;
+    }
+
     void StartAnimation()
     {
         _animation.Stop();
         Frame = 0;
-        if (!CurrentImage.IsAnimated) return;
-        _animation.Interval = CurrentImage.Durations[0];
+        if (CurrentPage.Image is not { IsAnimated: true } image) return;
+        _animation.Interval = image.Durations[0];
         _animation.Start();
     }
 
     void NextFrame()
     {
-        Frame = (Frame + 1) % CurrentImage.Frames.Length;
-        _animation.Interval = CurrentImage.Durations[Frame];
+        if (CurrentPage.Image is not { } image) return;
+        Frame = (Frame + 1) % image.Frames.Length;
+        _animation.Interval = image.Durations[Frame];
     }
 
     Point PositionPicture()
@@ -144,6 +185,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     Size SizePicture()
     {
+        if (Picture is null) return default;
         var ratio = Picture.Size.AspectRatio;
         return Display switch
         {
@@ -176,6 +218,9 @@ public partial class MainWindowViewModel : ViewModelBase
         Display = zoom;
     }
 
+    /// <summary>An image, or why it couldn't be loaded.</summary>
+    record Page(LoadedImage? Image, string? Error);
+
     void PanImage(Direction direction)
     {
         Offset = direction switch
@@ -188,9 +233,11 @@ public partial class MainWindowViewModel : ViewModelBase
         };
     }
 
-    static (int index, (string, Lazy<LoadedImage>)[] dirImages) GetDirImageIndex(string initialPath)
+    static (int index, (string, Func<LoadedImage>)[] dirImages) GetDirImageIndex(string initialPath)
     {
         var fullPath = Path.GetFullPath(initialPath);
+        if (!File.Exists(fullPath) && !Directory.Exists(fullPath))
+            throw new FileNotFoundException("no such file or folder");
         // Natural order, as file managers show it: "img2" before "img10".
         var byName = StringComparer.Create(CultureInfo.CurrentCulture, CompareOptions.IgnoreCase | CompareOptions.NumericOrdering);
 
@@ -202,7 +249,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 throw new ArgumentException($"no images found in {fullPath}");
             var archiveName = Path.GetFileName(fullPath);
             return (0, pages
-                .Select(page => ($"{archiveName} › {page}", new Lazy<LoadedImage>(() => ImageArchive.Load(fullPath, page))))
+                .Select(page => ($"{archiveName} › {page}", (Func<LoadedImage>)(() => ImageArchive.Load(fullPath, page))))
                 .ToArray());
         }
 
@@ -215,10 +262,11 @@ public partial class MainWindowViewModel : ViewModelBase
             .ToArray();
         if (imagePaths.Length == 0)
             throw new ArgumentException($"no images found in {directory}");
-        // Not one of the listed images (e.g. an unsupported file): start at the first one.
+        // An existing file that isn't one of the listed images (e.g. an unsupported type):
+        // start at the first image beside it.
         var index = Math.Max(Array.IndexOf(imagePaths, fullPath), 0);
         var images = imagePaths
-            .Select(path => (path, new Lazy<LoadedImage>(() => ImageLoader.Load(path))))
+            .Select(path => (path, (Func<LoadedImage>)(() => ImageLoader.Load(path))))
             .ToArray();
         return (index, images);
     }

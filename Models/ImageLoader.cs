@@ -18,8 +18,9 @@ public record LoadedImage(Bitmap[] Frames, TimeSpan[] Durations)
 
 public static class ImageLoader
 {
-    // GIF/WebP frames with no (or a silly) delay are shown for this long, as browsers do.
-    static readonly TimeSpan MinFrameDuration = TimeSpan.FromMilliseconds(20);
+    // Browsers show GIF/WebP frames with a delay of 10 ms or less (usually 0, meaning
+    // "unset") for 100 ms, and so does EyeBrowse.
+    static readonly TimeSpan MaxUnsetFrameDuration = TimeSpan.FromMilliseconds(10);
     static readonly TimeSpan DefaultFrameDuration = TimeSpan.FromMilliseconds(100);
 
     static readonly string[] Extensions = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff", ".webp"];
@@ -27,7 +28,10 @@ public static class ImageLoader
     /// <summary>Whether a file or archive entry name has a supported image extension.</summary>
     public static bool IsImage(string name)
     {
-        return Extensions.Contains(Path.GetExtension(name), StringComparer.OrdinalIgnoreCase);
+        // macOS writes "._name" metadata files (AppleDouble) next to files on non-Mac
+        // drives and into zips; they share the image's extension but aren't images.
+        return Extensions.Contains(Path.GetExtension(name), StringComparer.OrdinalIgnoreCase)
+               && !Path.GetFileName(name).StartsWith("._", StringComparison.Ordinal);
     }
 
     public static LoadedImage Load(string path)
@@ -49,7 +53,9 @@ public static class ImageLoader
     // ignores EXIF orientation and only ever decodes the first frame.
     static LoadedImage LoadWithSkia(byte[] data)
     {
-        using var skData = SKData.CreateCopy(data);
+        // Skia reads the array in place (pinned until Skia releases it) rather than a copy.
+        var pin = GCHandle.Alloc(data, GCHandleType.Pinned);
+        using var skData = SKData.Create(pin.AddrOfPinnedObject(), data.Length, (_, _) => pin.Free());
         using var codec = SKCodec.Create(skData) ?? throw new InvalidDataException("not a readable image");
         var info = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
         var frameInfos = codec.FrameCount > 1 ? codec.FrameInfo : [];
@@ -73,7 +79,7 @@ public static class ImageLoader
 
             var frames = decoded.Select(frame => ToAvalonia(Orient(frame, codec.EncodedOrigin))).ToArray();
             var durations = frameInfos
-                .Select(f => f.Duration < MinFrameDuration.TotalMilliseconds ? DefaultFrameDuration : TimeSpan.FromMilliseconds(f.Duration))
+                .Select(f => f.Duration <= MaxUnsetFrameDuration.TotalMilliseconds ? DefaultFrameDuration : TimeSpan.FromMilliseconds(f.Duration))
                 .ToArray();
             return new(frames, durations);
         }
@@ -138,20 +144,58 @@ public static class ImageLoader
     // Skia, which Avalonia decodes images with, has no TIFF support.
     static Bitmap LoadTiff(byte[] data)
     {
-        using var tiff = Tiff.ClientOpen("image", "r", new MemoryStream(data), new TiffStream())
+        using var tiff = Tiff.ClientOpen("image", "r", new MemoryStream(data, writable: false), new TiffStream())
                          ?? throw new InvalidDataException("not a readable TIFF");
         var width = tiff.GetField(TiffTag.IMAGEWIDTH)[0].ToInt();
         var height = tiff.GetField(TiffTag.IMAGELENGTH)[0].ToInt();
+        return LoadGreyAlphaTiff(tiff, width, height) ?? LoadRgbaTiff(tiff, width, height);
+    }
 
-        // Each int is packed R | G << 8 | B << 16 | A << 24, i.e. RGBA bytes in memory.
+    static Bitmap LoadRgbaTiff(Tiff tiff, int width, int height)
+    {
+        // Each int is packed R | G << 8 | B << 16 | A << 24, i.e. RGBA bytes in memory,
+        // with the colour already multiplied by alpha whatever the file stores.
         var raster = new int[width * height];
         if (!tiff.ReadRGBAImageOriented(width, height, raster, Orientation.TOPLEFT))
             throw new InvalidDataException("cannot decode this TIFF");
+        return ToAvalonia(raster, width, height, AlphaFormat.Premul);
+    }
 
-        var handle = GCHandle.Alloc(raster, GCHandleType.Pinned);
+    // The RGBA reader above drops the alpha of grey + alpha images, so read 8-bit ones
+    // (the usual kind) directly. Returns null for anything else.
+    static Bitmap? LoadGreyAlphaTiff(Tiff tiff, int width, int height)
+    {
+        int Field(TiffTag tag, int fallback) => tiff.GetField(tag)?[0].ToInt() ?? fallback;
+        if (Field(TiffTag.PHOTOMETRIC, -1) != (int)Photometric.MINISBLACK || Field(TiffTag.SAMPLESPERPIXEL, 1) != 2
+            || Field(TiffTag.BITSPERSAMPLE, 1) != 8 || Field(TiffTag.PLANARCONFIG, 1) != (int)PlanarConfig.CONTIG
+            || tiff.IsTiled())
+            return null;
+
+        var extraSamples = tiff.GetField(TiffTag.EXTRASAMPLES);
+        var associated = extraSamples is not null && extraSamples[1].ToShortArray()[0] == (short)ExtraSample.ASSOCALPHA;
+        var rgba = new byte[width * height * 4];
+        var line = new byte[tiff.ScanlineSize()];
+        for (var y = 0; y < height; y++)
+        {
+            if (!tiff.ReadScanline(line, y))
+                throw new InvalidDataException("cannot decode this TIFF");
+            for (var x = 0; x < width; x++)
+            {
+                var (grey, alpha, i) = (line[2 * x], line[2 * x + 1], (y * width + x) * 4);
+                (rgba[i], rgba[i + 1], rgba[i + 2], rgba[i + 3]) = (grey, grey, grey, alpha);
+            }
+        }
+
+        return ToAvalonia(rgba, width, height, associated ? AlphaFormat.Premul : AlphaFormat.Unpremul);
+    }
+
+    // Copies RGBA pixels held in a managed array into an Avalonia bitmap.
+    static Bitmap ToAvalonia(Array pixels, int width, int height, AlphaFormat alphaFormat)
+    {
+        var handle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
         try
         {
-            return new(PixelFormat.Rgba8888, AlphaFormat.Unpremul, handle.AddrOfPinnedObject(),
+            return new(PixelFormat.Rgba8888, alphaFormat, handle.AddrOfPinnedObject(),
                 new(width, height), new(96, 96), width * 4);
         }
         finally
