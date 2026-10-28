@@ -1,11 +1,9 @@
 using System.Threading.Tasks;
-using ReactiveUI.Primitives;
 using ReactiveUI.Primitives.Signals;
 using Avalonia.Controls;
 using Avalonia.Input;
 using ReactiveUI.Avalonia;
 using EyeBrowse.ViewModels;
-using ReactiveUI;
 using Direction = EyeBrowse.ViewModels.MainWindowViewModel.Direction;
 using Browse = EyeBrowse.ViewModels.MainWindowViewModel.Browse;
 using Zoom = EyeBrowse.ViewModels.MainWindowViewModel.Zoom;
@@ -21,13 +19,6 @@ public partial class MainWindow : ReactiveWindow<MainWindowViewModel>
 #if !DEBUG
         WindowState = WindowState.FullScreen;
 #endif
-        this.WhenActivated(disposables =>
-        {
-            this.OneWayBind(ViewModel, viewModel => viewModel.PictureSize, view => view.Picture.Width, s => s.Width)
-                .DisposeWith(disposables);
-            this.OneWayBind(ViewModel, viewModel => viewModel.PictureSize, view => view.Picture.Height, s => s.Height)
-                .DisposeWith(disposables);
-        });
     }
 
     protected override async void OnResized(WindowResizedEventArgs e)
@@ -55,6 +46,19 @@ public partial class MainWindow : ReactiveWindow<MainWindowViewModel>
         {
             await ShowHelp();
             return;
+        }
+
+        switch (e.Key)
+        {
+            case Key.D1 or Key.NumPad1:
+                await vm.PagesCommand.Execute(false);
+                return;
+            case Key.D2 or Key.NumPad2:
+                await vm.PagesCommand.Execute(true);
+                return;
+            case Key.R:
+                await vm.ReadingDirectionCommand.Execute();
+                return;
         }
 
         var action = e.Key switch

@@ -26,6 +26,11 @@
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="Opacity" Value="0.6" />
         </Style>
+        <Style Selector="Border.divider">
+            <Setter Property="Width" Value="1" />
+            <Setter Property="Margin" Value="2,4" />
+            <Setter Property="Background" Value="#407FFF00" />
+        </Style>
         <Style Selector="Border.mode.on">
             <Setter Property="BorderBrush" Value="Chartreuse" />
             <Setter Property="Background" Value="#247FFF00" />
@@ -58,9 +63,15 @@
     </Design.DataContext>
     <Grid>
         <Canvas>
-            <Image x:Name="Picture" Source="{Binding Picture}"
-                   Canvas.Top="{Binding PicturePosition.Y}"
-                   Canvas.Left="{Binding PicturePosition.X}" />
+            <!-- One page, or two side by side, centred on each other vertically. -->
+            <StackPanel Orientation="Horizontal"
+                        Canvas.Top="{Binding PicturePosition.Y}"
+                        Canvas.Left="{Binding PicturePosition.X}">
+                <Image Source="{Binding Picture}" VerticalAlignment="Center"
+                       Width="{Binding Picture1Size.Width}" Height="{Binding Picture1Size.Height}" />
+                <Image Source="{Binding Picture2}" VerticalAlignment="Center"
+                       Width="{Binding Picture2Size.Width}" Height="{Binding Picture2Size.Height}" />
+            </StackPanel>
             <StackPanel>
                 <TextBlock Text="{Binding Title}" />
             </StackPanel>
@@ -102,6 +113,38 @@
                                 </Canvas>
                             </Viewbox>
                             <TextBlock Text="C" />
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="divider" />
+                    <Border Classes="mode" Classes.on="{Binding !Spread}" ToolTip.Tip="One page (1)">
+                        <StackPanel>
+                            <Viewbox>
+                                <Canvas Width="32" Height="32">
+                                    <Rectangle Classes="line" Canvas.Left="10" Canvas.Top="5" Width="12" Height="22" />
+                                </Canvas>
+                            </Viewbox>
+                            <TextBlock Text="1" />
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="mode" Classes.on="{Binding Spread}" ToolTip.Tip="Two pages (2)">
+                        <StackPanel>
+                            <Viewbox>
+                                <Canvas Width="32" Height="32">
+                                    <Rectangle Classes="line" Canvas.Left="3" Canvas.Top="5" Width="12" Height="22" />
+                                    <Rectangle Classes="line" Canvas.Left="17" Canvas.Top="5" Width="12" Height="22" />
+                                </Canvas>
+                            </Viewbox>
+                            <TextBlock Text="2" />
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="mode" Classes.on="{Binding RightToLeft}" ToolTip.Tip="Right to left (R)">
+                        <StackPanel>
+                            <Viewbox>
+                                <Canvas Width="32" Height="32">
+                                    <Path Classes="line" StrokeThickness="2.4" Data="M27 16 H6 M13 9 L6 16 L13 23" />
+                                </Canvas>
+                            </Viewbox>
+                            <TextBlock Text="R" />
                         </StackPanel>
                     </Border>
                 </StackPanel>

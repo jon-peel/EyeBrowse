@@ -38,6 +38,24 @@ public static class ImageArchive
         return ImageLoader.Load(entryName, data);
     }
 
+    /// <summary>
+    /// Whether the archive says it's manga read right to left: ComicInfo.xml, the metadata
+    /// file comic tools add, holding &lt;Manga&gt;YesAndRightToLeft&lt;/Manga&gt;.
+    /// </summary>
+    public static bool IsRightToLeft(string archivePath)
+    {
+        using var zip = ZipFile.OpenRead(archivePath);
+        var info = zip.Entries.FirstOrDefault(e => e.FullName.Equals("ComicInfo.xml", StringComparison.OrdinalIgnoreCase));
+        if (info is null) return false;
+
+        using var reader = new StreamReader(info.Open());
+        var xml = reader.ReadToEnd();
+        var start = xml.IndexOf("<Manga>", StringComparison.OrdinalIgnoreCase);
+        var end = start < 0 ? -1 : xml.IndexOf("</Manga>", start, StringComparison.OrdinalIgnoreCase);
+        return end > start && xml[(start + "<Manga>".Length)..end].Trim()
+            .Equals("YesAndRightToLeft", StringComparison.OrdinalIgnoreCase);
+    }
+
     // .NET decides what is a readable zip, wherever its data starts. If it isn't one,
     // the file's first bytes say what it is instead, for a clearer message.
     static ZipArchive OpenZip(string archivePath)

@@ -50,9 +50,9 @@
                    Text="It shows that image full screen, and you can step through the other images in the same folder, or the pages of a comic book archive." />
 
         <TextBlock Classes="heading" Text="Keys" />
-        <Grid Classes="keys" ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+        <Grid Classes="keys" ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Classes="key" Text="Q  /  E" />
-            <TextBlock Grid.Row="0" Grid.Column="1" Text="Previous / next image" />
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="Previous / next image (or pair)" />
             <TextBlock Grid.Row="1" Classes="key" Text="W A S D" />
             <TextBlock Grid.Row="1" Grid.Column="1" Text="Pan" />
             <TextBlock Grid.Row="2" Classes="key" Text="Z" />
@@ -61,10 +61,16 @@
             <TextBlock Grid.Row="3" Grid.Column="1" Text="Fit to the screen" />
             <TextBlock Grid.Row="4" Classes="key" Text="C" />
             <TextBlock Grid.Row="4" Grid.Column="1" Text="True size" />
-            <TextBlock Grid.Row="5" Classes="key" Text="H  F1  ?" />
-            <TextBlock Grid.Row="5" Grid.Column="1" Text="This help" />
-            <TextBlock Grid.Row="6" Classes="key" Text="Esc" />
-            <TextBlock Grid.Row="6" Grid.Column="1" Text="Quit" />
+            <TextBlock Grid.Row="5" Classes="key" Text="1" />
+            <TextBlock Grid.Row="5" Grid.Column="1" Text="One page" />
+            <TextBlock Grid.Row="6" Classes="key" Text="2" />
+            <TextBlock Grid.Row="6" Grid.Column="1" Text="Two pages; press again to shift the pairs" />
+            <TextBlock Grid.Row="7" Classes="key" Text="R" />
+            <TextBlock Grid.Row="7" Grid.Column="1" Text="Right to left, for manga" />
+            <TextBlock Grid.Row="8" Classes="key" Text="H  F1  ?" />
+            <TextBlock Grid.Row="8" Grid.Column="1" Text="This help" />
+            <TextBlock Grid.Row="9" Classes="key" Text="Esc" />
+            <TextBlock Grid.Row="9" Grid.Column="1" Text="Quit" />
         </Grid>
         <TextBlock Classes="note" Margin="0,8,0,0"
                    Text="EyeBrowse is keyboard-only: the arrow keys and mouse clicks just open this help." />
