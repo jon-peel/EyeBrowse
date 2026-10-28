@@ -6,5 +6,5 @@ EyeBrowse is a very basic image browser written in C#, using Avalonia.
 
 EyeBrowse never records which files or folders you open, or where you were in them. It
 saves only your preferences (the keep-pan setting, and the scale mode, one or two pages and
-overlay as you last left them) in =settings.txt=: =%APPDATA%\EyeBrowse= on Windows,
+overlay as you last left them) in =settings.ini=: =%APPDATA%\EyeBrowse= on Windows,
 =~/.config/EyeBrowse= on Linux and macOS.

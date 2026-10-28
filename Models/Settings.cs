@@ -15,7 +15,7 @@ public sealed class Settings
     // %APPDATA%\EyeBrowse on Windows (redirected into the package when installed from
     // MSIX), ~/.config/EyeBrowse elsewhere.
     static readonly string FilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "EyeBrowse", "settings.txt");
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "EyeBrowse", "settings.ini");
 
     public static Settings Current { get; } = Load();
 
@@ -29,7 +29,8 @@ public sealed class Settings
     public bool FolderSpread { get; set; }
     public bool ShowOverlay { get; set; } = true;
 
-    // Plain "name=value" lines: small, readable, and nothing for trimming to break.
+    // An INI file: small, readable, and nothing for trimming to break. Section headers and
+    // comments are skipped when reading; names are unique across sections.
     static Settings Load()
     {
         var settings = new Settings();
@@ -37,9 +38,12 @@ public sealed class Settings
         try
         {
             values = File.ReadAllLines(FilePath)
+                .Select(line => line.Trim())
+                .Where(line => !line.StartsWith('[') && !line.StartsWith(';') && !line.StartsWith('#'))
                 .Select(line => line.Split('=', 2))
                 .Where(parts => parts.Length == 2)
-                .ToDictionary(parts => parts[0].Trim(), parts => parts[1].Trim());
+                .GroupBy(parts => parts[0].Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.Last()[1].Trim(), StringComparer.OrdinalIgnoreCase);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -50,7 +54,7 @@ public sealed class Settings
         settings.ComicSpread = Bool("ComicSpread", settings.ComicSpread);
         settings.FolderSpread = Bool("FolderSpread", settings.FolderSpread);
         settings.ShowOverlay = Bool("ShowOverlay", settings.ShowOverlay);
-        if (values.TryGetValue("Zoom", out var zoom) && Enum.TryParse<Zoom>(zoom, out var parsed) && Enum.IsDefined(parsed))
+        if (values.TryGetValue("Zoom", out var zoom) && Enum.TryParse<Zoom>(zoom, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed))
             settings.Zoom = parsed;
         return settings;
 
@@ -66,15 +70,23 @@ public sealed class Settings
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
             File.WriteAllLines(FilePath,
             [
-                $"KeepPan={KeepPan}",
+                "; EyeBrowse preferences. EyeBrowse keeps no history: no files or positions are stored here.",
+                "",
+                "[Settings]",
+                $"KeepPan={Bool(KeepPan)}",
+                "",
+                "; As last left, restored next time.",
+                "[Modes]",
                 $"Zoom={Zoom}",
-                $"ComicSpread={ComicSpread}",
-                $"FolderSpread={FolderSpread}",
-                $"ShowOverlay={ShowOverlay}",
+                $"ComicSpread={Bool(ComicSpread)}",
+                $"FolderSpread={Bool(FolderSpread)}",
+                $"ShowOverlay={Bool(ShowOverlay)}",
             ]);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
         }
+
+        static string Bool(bool value) => value ? "true" : "false";
     }
 }
