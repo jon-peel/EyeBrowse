@@ -34,19 +34,24 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      number: ${{ steps.version.outputs.number }}
     steps:
-      # v1.2.3 tags are version 1.2.3; other builds 0.0.<run number>. The MSIX adds a ".0".
+      # v1.2.3 tags are version 1.2.3, and v1.2.3-beta a pre-release, 1.2.3-beta; other builds
+      # are 0.0.<run number>. "number" is without the pre-release part, for the MSIX.
       - id: version
         run: |
-          if [[ "$GITHUB_REF" =~ ^refs/tags/v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+          if [[ "$GITHUB_REF" =~ ^refs/tags/v(([0-9]+\.[0-9]+\.[0-9]+)(-[0-9A-Za-z][0-9A-Za-z.-]*)?)$ ]]; then
             version=${BASH_REMATCH[1]}
+            number=${BASH_REMATCH[2]}
           elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "::error::Release tags must look like v1.2.3, not $GITHUB_REF_NAME"
+            echo "::error::Release tags must look like v1.2.3 or v1.2.3-beta, not $GITHUB_REF_NAME"
             exit 1
           else
             version=0.0.$GITHUB_RUN_NUMBER
+            number=$version
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "number=$number" >> "$GITHUB_OUTPUT"
           echo "Version $version"
 
   build:
@@ -128,10 +133,10 @@ jobs:
           MSIX_CERTIFICATE: ${{ secrets.MSIX_CERTIFICATE }}
           MSIX_CERTIFICATE_PASSWORD: ${{ secrets.MSIX_CERTIFICATE_PASSWORD }}
         run: |
-          # MSIX versions have four parts, the last 0: 1.2.3 becomes 1.2.3.0.
-          $version = "${{ needs.version.outputs.version }}.0"
+          # MSIX versions are four numbers, the last 0: 1.2.3 and 1.2.3-beta become 1.2.3.0.
           $arguments = @{
-            Version = $version
+            Version = "${{ needs.version.outputs.number }}.0"
+            AppVersion = "${{ needs.version.outputs.version }}"
             IdentityName = "${{ vars.MSIX_IDENTITY_NAME || 'EyeBrowse' }}"
             Publisher = "${{ vars.MSIX_PUBLISHER || 'CN=EyeBrowse Test' }}"
             PublisherDisplayName = "${{ vars.MSIX_PUBLISHER_DISPLAY_NAME || 'EyeBrowse' }}"
@@ -175,3 +180,5 @@ jobs:
         with:
           files: dist/*
           generate_release_notes: true
+          # v1.2.3-beta and the like.
+          prerelease: ${{ contains(github.ref_name, '-') }}

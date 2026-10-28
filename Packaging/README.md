@@ -7,6 +7,11 @@ release as version `1.2.3.0`; other builds are `0.0.<run number>.0`, kept as wor
 artifacts for 14 days. The app inside shows the same version without the last `.0` (`1.2.3`,
 like the other platforms' builds); a local `dotnet build` shows `0.0.0-dev`.
 
+A pre-release tag (`v1.2.3-beta`) makes a GitHub pre-release. Package versions can only be
+numbers, so its package is also `1.2.3.0`, while the app shows `1.2.3-beta`. Windows won't
+install a different package over one with the same version, so uninstall the pre-release
+before installing the release of the same number.
+
 Installing it adds EyeBrowse to the Start menu and to **Open with** for images (`.png .jpg
 .jpeg .bmp .gif .tif .tiff .webp`) and comic archives (`.cbz .cbr .cb7 .cbt .zip`). Windows
 never makes it the default by itself: choose **Open with → Choose another app** and tick
