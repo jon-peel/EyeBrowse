@@ -131,16 +131,16 @@
                 </StackPanel>
             </Border>
 
-            <!-- Scale modes (Z X C); the current one is outlined. -->
+            <!-- Scale modes (Z X C); the current one is outlined. Each icon shows the picture
+                 (solid) against the screen (outline): spilling past it, fitted inside it, or 1:1. -->
             <Border Classes="modes" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="8">
                 <StackPanel Orientation="Horizontal" Spacing="2">
                     <Border Classes="mode" Classes.on="{Binding IsFill}" ToolTip.Tip="Fill (Z)">
                         <StackPanel>
                             <Viewbox>
                                 <Canvas Width="32" Height="32">
-                                    <Path Classes="line" StrokeThickness="2.4" Data="M3 9 V3 H9 M23 3 H29 V9 M29 23 V29 H23 M9 29 H3 V23" />
-                                    <Rectangle Canvas.Left="6" Canvas.Top="6" Width="20" Height="20" Fill="Chartreuse" Opacity="0.85" />
-                                    <Path Stroke="Black" StrokeThickness="2" Data="M10 10 L4 4 M22 10 L28 4 M22 22 L28 28 M10 22 L4 28" />
+                                    <Rectangle Canvas.Left="0" Canvas.Top="2" Width="32" Height="28" Fill="Chartreuse" Opacity="0.3" />
+                                    <Rectangle Canvas.Left="3" Canvas.Top="8" Width="26" Height="16" Fill="Chartreuse" />
                                 </Canvas>
                             </Viewbox>
                             <TextBlock Text="Z" />
@@ -150,9 +150,8 @@
                         <StackPanel>
                             <Viewbox>
                                 <Canvas Width="32" Height="32">
-                                    <Path Classes="line" StrokeThickness="2.4" Data="M3 9 V3 H9 M23 3 H29 V9 M29 23 V29 H23 M9 29 H3 V23" />
-                                    <Rectangle Classes="line" Canvas.Left="9" Canvas.Top="11" Width="14" Height="10" />
-                                    <Path Classes="line" Data="M12 8 L16 4.5 L20 8 M12 24 L16 27.5 L20 24" />
+                                    <Rectangle Classes="line" Canvas.Left="3" Canvas.Top="8" Width="26" Height="16" />
+                                    <Rectangle Canvas.Left="11" Canvas.Top="8" Width="10" Height="16" Fill="Chartreuse" />
                                 </Canvas>
                             </Viewbox>
                             <TextBlock Text="X" />
@@ -162,9 +161,9 @@
                         <StackPanel>
                             <Viewbox>
                                 <Canvas Width="32" Height="32">
-                                    <Path Classes="line" Opacity="0.4" Data="M3 9 V3 H9 M23 3 H29 V9 M29 23 V29 H23 M9 29 H3 V23" />
-                                    <Rectangle Classes="line" Canvas.Left="9" Canvas.Top="9" Width="14" Height="14" />
-                                    <Ellipse Canvas.Left="14" Canvas.Top="14" Width="4" Height="4" Fill="Chartreuse" />
+                                    <Rectangle Classes="line" StrokeThickness="1.5" Canvas.Left="1" Canvas.Top="5" Width="30" Height="22" />
+                                    <TextBlock Canvas.Left="1" Canvas.Top="5" Width="30" Height="22" Text="1:1" FontSize="17" FontWeight="Bold"
+                                               Foreground="Chartreuse" TextAlignment="Center" LineHeight="22" />
                                 </Canvas>
                             </Viewbox>
                             <TextBlock Text="C" />
