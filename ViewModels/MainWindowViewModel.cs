@@ -386,12 +386,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
     void PanImage(Direction direction)
     {
+        // The view moves the way of the key: +100 shows the picture's top or left edge.
         Offset = direction switch
         {
             Direction.Up when Offset.y < 100 => (Offset.x, Offset.y + 10),
             Direction.Down when Offset.y > -100 => (Offset.x, Offset.y - 10),
-            Direction.Left when Offset.x > -100 => (Offset.x - 10, Offset.y),
-            Direction.Right when Offset.x < 100 => (Offset.x + 10, Offset.y),
+            Direction.Left when Offset.x < 100 => (Offset.x + 10, Offset.y),
+            Direction.Right when Offset.x > -100 => (Offset.x - 10, Offset.y),
             _ => Offset
         };
     }
