@@ -1,6 +1,10 @@
 using System;
+using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
+using Avalonia.Platform.Storage;
 using EyeBrowse.Models;
 
 namespace EyeBrowse.Views;
@@ -35,6 +39,42 @@ public partial class HelpWindow : Window
             };
         }
         ShowSettings();
+
+        // Dropping an image, folder or archive on the window opens it, as if opened with EyeBrowse.
+        DragDrop.SetAllowDrop(this, true);
+        AddHandler(DragDrop.DragOverEvent, (_, e) =>
+            e.DragEffects = DroppedPath(e) is null ? DragDropEffects.None : DragDropEffects.Copy);
+        AddHandler(DragDrop.DropEvent, OnDrop);
+    }
+
+    static string? DroppedPath(DragEventArgs e) =>
+        e.DataTransfer.TryGetFiles()?.Select(item => item.TryGetLocalPath()).FirstOrDefault(path => path is not null);
+
+    void OnDrop(object? sender, DragEventArgs e)
+    {
+        if (DroppedPath(e) is not { } path) return;
+        e.Handled = true;
+
+        MainWindow window;
+        try
+        {
+            window = App.OpenImageWindow(path);
+        }
+        catch (Exception error) when (App.IsOpenError(error))
+        {
+            ErrorText.Text = $"Couldn't open {path}: {error.Message}";
+            ErrorPanel.IsVisible = true;
+            return;
+        }
+
+        // The new image window takes over; this window, and the image window it was opened
+        // over (if any), close.
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            desktop.MainWindow = window;
+        window.Show();
+        var owner = Owner as Window;
+        Close();
+        owner?.Close();
     }
 
     void OpenLink(object? sender, PointerPressedEventArgs e) => AboutWindow.OpenLink(sender, e);

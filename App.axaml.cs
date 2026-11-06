@@ -45,13 +45,20 @@ public class App : Application
 
         try
         {
-            return new MainWindow { DataContext = new MainWindowViewModel(path) };
+            return OpenImageWindow(path);
         }
-        catch (Exception e) when (e is ArgumentException or IOException or InvalidDataException or UnauthorizedAccessException)
+        catch (Exception e) when (IsOpenError(e))
         {
             return new HelpWindow($"Couldn't open {path}: {e.Message}");
         }
     }
+
+    /// <summary>The image window for an image, folder or archive; throws an <see cref="IsOpenError"/> if it can't be opened.</summary>
+    public static MainWindow OpenImageWindow(string path) => new() { DataContext = new MainWindowViewModel(path) };
+
+    /// <summary>Whether an error is the path not being something EyeBrowse can open, rather than a bug.</summary>
+    public static bool IsOpenError(Exception e) =>
+        e is ArgumentException or IOException or InvalidDataException or UnauthorizedAccessException;
 
     /// <summary>Shows an unexpected error over the main window. Nothing is written to disk.</summary>
     public static void ReportError(Exception error) => Dispatcher.UIThread.Post(async () =>

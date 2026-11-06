@@ -74,7 +74,7 @@
         </Border>
 
         <TextBlock Classes="heading" Text="How to use" />
-        <TextBlock Text="Open an image with EyeBrowse, for example with right-click, Open with, or run:" />
+        <TextBlock Text="Drop an image, folder or comic on this window, open one with EyeBrowse (right-click, Open with), or run:" />
         <TextBlock Text="EyeBrowse &lt;image, folder or archive&gt;" FontFamily="monospace" Margin="0,6,0,0" Foreground="#DFFFBF" />
         <TextBlock Classes="note" Margin="0,6,0,0"
                    Text="It shows that image full screen, and you can step through the other images in the same folder, or the pages of a comic book archive." />
