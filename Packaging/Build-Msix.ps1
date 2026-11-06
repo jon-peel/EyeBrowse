@@ -1,27 +1,25 @@
 <#
 .SYNOPSIS
-    Builds EyeBrowse as an MSIX bundle (x64 and ARM64), signed if a certificate is given.
+    Builds EyeBrowse as an MSIX bundle (x64 and ARM64), for uploading to the Microsoft Store.
 
 .DESCRIPTION
-    Needs Windows, the .NET 10 SDK and the Windows SDK (makeappx, makepri, signtool).
-    Without a certificate the bundle is unsigned: fine to upload to the Microsoft Store,
-    which signs it, but Windows won't install it directly. See Packaging/README.md.
+    Needs Windows, the .NET 10 SDK and the Windows SDK (makeappx, makepri). The bundle is
+    unsigned: the Store signs it, and Windows won't install it directly. See Packaging/README.md.
 
 .EXAMPLE
-    ./Packaging/Build-Msix.ps1 -Version 0.2.0.0 -Publisher "CN=EyeBrowse Test" `
-        -CertificatePath test.pfx -CertificatePassword (Read-Host -AsSecureString)
+    ./Packaging/Build-Msix.ps1 -Version 1.2.3.0 -IdentityName <Name> -Publisher "CN=<ID>" `
+        -PublisherDisplayName <Name>
 #>
 param(
     [string] $Version = "0.0.1.0",
     # The version the app itself shows (About), e.g. 1.2.3-beta; by default $Version without the ".0".
     [string] $AppVersion,
-    [string] $IdentityName = "EyeBrowse",
-    [string] $Publisher = "CN=EyeBrowse Test",
-    [string] $PublisherDisplayName = "EyeBrowse",
+    # The app's identity, from Partner Center's Product identity page.
+    [Parameter(Mandatory)] [string] $IdentityName,
+    [Parameter(Mandatory)] [string] $Publisher,
+    [Parameter(Mandatory)] [string] $PublisherDisplayName,
     [string[]] $Architectures = @("x64", "arm64"),
-    [string] $OutDir = "msix",
-    [string] $CertificatePath,
-    [SecureString] $CertificatePassword
+    [string] $OutDir = "msix"
 )
 $ErrorActionPreference = "Stop"
 
@@ -78,14 +76,6 @@ foreach ($arch in $Architectures) {
 Write-Host "== bundling"
 $bundle = Join-Path $OutDir "EyeBrowse_$Version.msixbundle"
 Invoke-Tool makeappx.exe bundle /d $packages /p $bundle /bv $Version /o
-
-if ($CertificatePath) {
-    Write-Host "== signing"
-    $password = [Net.NetworkCredential]::new("", $CertificatePassword).Password
-    Invoke-Tool signtool.exe sign /fd SHA256 /f $CertificatePath /p $password $bundle
-} else {
-    Write-Host "== not signed (no certificate): fine for the Store, not for installing directly"
-}
 
 Remove-Item $work -Recurse -Force
 Write-Host "Built $bundle"

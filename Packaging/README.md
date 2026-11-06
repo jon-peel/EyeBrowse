@@ -16,32 +16,22 @@ numbers, so its bundle is also `1.2.3.0`, while the app shows `1.2.3-beta`. Uplo
 release (not pre-release) bundles to the Store: each upload must have a higher version than
 the last.
 
-Installing it adds EyeBrowse to the Start menu and to **Open with** for images (`.png .jpg
+Installed from the Store, it adds EyeBrowse to the Start menu and to **Open with** for images (`.png .jpg
 .jpeg .bmp .gif .tif .tiff .webp`) and comic archives (`.cbz .cbr .cb7 .cbt .zip`). Windows
 never makes it the default by itself: choose **Open with → Choose another app** and tick
 "Always" if you want that. Uninstall it like any other app.
 
-## Signing for local testing
-
-Windows only installs a package signed by a certificate it trusts, so the Store bundle can't
-be installed directly. To try a package on your own PC, build and sign one locally with a test
-certificate: make one (once) with
-`./Packaging/New-TestCertificate.ps1 -Password (Read-Host -AsSecureString)`, which writes
-`EyeBrowse-test.pfx` (keep it private, and out of the repository) and `EyeBrowse-test.cer`.
-Trust the certificate once, in an administrator PowerShell:
-`Import-Certificate -FilePath EyeBrowse-test.cer -CertStoreLocation Cert:\LocalMachine\TrustedPeople`
-
 ## Building locally
 
-On Windows with the .NET 10 SDK and the Windows SDK:
+On Windows with the .NET 10 SDK and the Windows SDK, with the values from Partner Center
+(below):
 
 ```
-./Packaging/Build-Msix.ps1 -Version 0.2.0.0 -CertificatePath EyeBrowse-test.pfx `
-    -CertificatePassword (Read-Host -AsSecureString)
+./Packaging/Build-Msix.ps1 -Version 1.2.3.0 -IdentityName <Name> -Publisher "CN=<ID>" `
+    -PublisherDisplayName <Name>
 ```
 
-The bundle is written to `msix/`; double-click it to install. (The publisher, by default
-`CN=EyeBrowse Test`, must be the certificate's subject.)
+The bundle is written to `msix/`.
 
 ## For the Microsoft Store
 
