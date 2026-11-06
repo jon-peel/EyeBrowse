@@ -152,40 +152,6 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      # For testing the package before it goes to the Store: signed with the test
-      # certificate, when the MSIX_CERTIFICATE secret is set, under a test identity so it
-      # can sit beside the Store's copy.
-      - name: Build test bundle
-        shell: pwsh
-        env:
-          MSIX_CERTIFICATE: ${{ secrets.MSIX_CERTIFICATE }}
-          MSIX_CERTIFICATE_PASSWORD: ${{ secrets.MSIX_CERTIFICATE_PASSWORD }}
-        run: |
-          if (-not $env:MSIX_CERTIFICATE) {
-            Write-Host "No MSIX_CERTIFICATE secret: test bundle not built"
-            exit 0
-          }
-          $pfx = Join-Path $env:RUNNER_TEMP "signing.pfx"
-          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:MSIX_CERTIFICATE))
-          $certificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new($pfx, $env:MSIX_CERTIFICATE_PASSWORD)
-          # The package's publisher must be the certificate's subject for it to be signed.
-          ./Packaging/Build-Msix.ps1 -OutDir msix-test `
-            -Version "${{ needs.version.outputs.number }}.0" -AppVersion "${{ needs.version.outputs.version }}" `
-            -IdentityName "EyeBrowse.Test" -Publisher $certificate.Subject -PublisherDisplayName "EyeBrowse (test)" `
-            -CertificatePath $pfx -CertificatePassword (ConvertTo-SecureString $env:MSIX_CERTIFICATE_PASSWORD -AsPlainText -Force)
-          # The public half, for testers to trust before installing.
-          [IO.File]::WriteAllBytes("msix-test/EyeBrowse.cer", $certificate.Export("Cert"))
-          Remove-Item $pfx
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: msix-test
-          path: |
-            msix-test/*.msixbundle
-            msix-test/*.cer
-          if-no-files-found: ignore
-          retention-days: 14
-
   release:
     name: Release
     needs: [ build, msix ]
@@ -194,7 +160,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      # The programs only; the MSIX bundles are for the Store and testing, not for releases.
+      # The programs only; the MSIX bundle is for the Store, not for releases.
       - uses: actions/download-artifact@v8
         with:
           pattern: EyeBrowse-*
