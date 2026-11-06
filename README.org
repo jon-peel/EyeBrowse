@@ -8,3 +8,16 @@ EyeBrowse never records which files or folders you open, or where you were in th
 saves only your preferences (the keep-pan setting, and the scale mode, one or two pages and
 overlay as you last left them) in =settings.ini=: =%APPDATA%\EyeBrowse= on Windows,
 =~/.config/EyeBrowse= on Linux and macOS.
+
+* Download
+
+Buy it from the Microsoft Store (installs and updates itself), or download the program for
+your system from the [[https://github.com/jon-peel/EyeBrowse/releases/latest][latest release]]: one file, nothing to install.
+
+- Windows: =EyeBrowse-win-x64.exe= (or =-win-arm64.exe=). Windows may warn that it's from
+  an unknown publisher; choose More info, Run anyway.
+- Linux: =EyeBrowse-linux-x64= (or =-linux-arm64=). Make it runnable first:
+  =chmod +x EyeBrowse-linux-x64=
+- macOS: =EyeBrowse-osx-arm64= (Apple silicon) or =-osx-x64= (Intel). Make it runnable with
+  =chmod +x=, and as it isn't signed, allow it the first time with
+  =xattr -d com.apple.quarantine EyeBrowse-osx-arm64=

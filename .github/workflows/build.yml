@@ -63,17 +63,11 @@ jobs:
       matrix:
         include:
           - rid: win-x64
-            archive: zip
           - rid: win-arm64
-            archive: zip
           - rid: linux-x64
-            archive: tar.gz
           - rid: linux-arm64
-            archive: tar.gz
           - rid: osx-x64
-            archive: tar.gz
           - rid: osx-arm64
-            archive: tar.gz
 
     steps:
       - uses: actions/checkout@v7
@@ -93,24 +87,27 @@ jobs:
           -p:IncludeNativeLibrariesForSelfExtract=true
           -p:DebugType=none
           -p:Version=${{ needs.version.outputs.version }}
-          -o publish/EyeBrowse-${{ matrix.rid }}
+          -o publish/out
 
-      - name: Archive
+      # Releases offer the program itself, not an archive: one file, downloaded and run.
+      - name: Single file
         working-directory: publish
         run: |
-          name=EyeBrowse-${{ matrix.rid }}
           # Native debug symbols shipped by the SkiaSharp/HarfBuzzSharp packages.
-          rm -f "$name"/*.pdb
-          if [ "${{ matrix.archive }}" = "zip" ]; then
-            zip -r "$name.zip" "$name"
-          else
-            tar -czf "$name.tar.gz" "$name"
+          rm -f out/*.pdb
+          files=(out/*)
+          if [ ${#files[@]} -ne 1 ]; then
+            echo "::error::Expected the publish to be one file, not: ${files[*]}"
+            exit 1
           fi
+          extension=""
+          [[ "${files[0]}" == *.exe ]] && extension=.exe
+          mv "${files[0]}" "EyeBrowse-${{ matrix.rid }}$extension"
 
       - uses: actions/upload-artifact@v7
         with:
           name: EyeBrowse-${{ matrix.rid }}
-          path: publish/EyeBrowse-${{ matrix.rid }}.${{ matrix.archive }}
+          path: publish/EyeBrowse-${{ matrix.rid }}*
           # Releases keep their own copies; the release job reads these minutes later.
           retention-days: 14
 
@@ -125,42 +122,68 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      # Signed only when the MSIX_CERTIFICATE secret is set (see Packaging/README.md);
-      # unsigned is what the Microsoft Store wants, as it signs packages itself.
-      - name: Build MSIX bundle
+      # For uploading to the Microsoft Store, which signs it: unsigned, with the identity
+      # Partner Center gives the app (see Packaging/README.md). Not put in GitHub releases.
+      - name: Build Store bundle
+        shell: pwsh
+        env:
+          IDENTITY_NAME: ${{ secrets.MSIX_IDENTITY_NAME || vars.MSIX_IDENTITY_NAME }}
+          PUBLISHER: ${{ secrets.MSIX_PUBLISHER || vars.MSIX_PUBLISHER }}
+          PUBLISHER_DISPLAY_NAME: ${{ secrets.MSIX_PUBLISHER_DISPLAY_NAME || vars.MSIX_PUBLISHER_DISPLAY_NAME }}
+        run: |
+          if (-not ($env:IDENTITY_NAME -and $env:PUBLISHER -and $env:PUBLISHER_DISPLAY_NAME)) {
+            Write-Host "::warning::No Store identity (MSIX_IDENTITY_NAME, MSIX_PUBLISHER, MSIX_PUBLISHER_DISPLAY_NAME): Store bundle not built"
+            exit 0
+          }
+          # Partner Center's publishers look like CN=12345678-ABCD-...; anything else (such as
+          # the old test publisher) won't be accepted by the Store.
+          if ($env:PUBLISHER -notmatch '^CN=[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-') {
+            Write-Host "::warning::MSIX_PUBLISHER doesn't look like a Partner Center publisher (CN=<ID>)"
+          }
+          # MSIX versions are four numbers, the last 0: 1.2.3 and 1.2.3-beta become 1.2.3.0.
+          ./Packaging/Build-Msix.ps1 -OutDir msix-store `
+            -Version "${{ needs.version.outputs.number }}.0" -AppVersion "${{ needs.version.outputs.version }}" `
+            -IdentityName $env:IDENTITY_NAME -Publisher $env:PUBLISHER -PublisherDisplayName $env:PUBLISHER_DISPLAY_NAME
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: msix-store
+          path: msix-store/*.msixbundle
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # For testing the package before it goes to the Store: signed with the test
+      # certificate, when the MSIX_CERTIFICATE secret is set, under a test identity so it
+      # can sit beside the Store's copy.
+      - name: Build test bundle
         shell: pwsh
         env:
           MSIX_CERTIFICATE: ${{ secrets.MSIX_CERTIFICATE }}
           MSIX_CERTIFICATE_PASSWORD: ${{ secrets.MSIX_CERTIFICATE_PASSWORD }}
         run: |
-          # MSIX versions are four numbers, the last 0: 1.2.3 and 1.2.3-beta become 1.2.3.0.
-          $arguments = @{
-            Version = "${{ needs.version.outputs.number }}.0"
-            AppVersion = "${{ needs.version.outputs.version }}"
-            IdentityName = "${{ vars.MSIX_IDENTITY_NAME || 'EyeBrowse' }}"
-            Publisher = "${{ vars.MSIX_PUBLISHER || 'CN=EyeBrowse Test' }}"
-            PublisherDisplayName = "${{ vars.MSIX_PUBLISHER_DISPLAY_NAME || 'EyeBrowse' }}"
+          if (-not $env:MSIX_CERTIFICATE) {
+            Write-Host "No MSIX_CERTIFICATE secret: test bundle not built"
+            exit 0
           }
-          if ($env:MSIX_CERTIFICATE) {
-            $pfx = Join-Path $env:RUNNER_TEMP "signing.pfx"
-            [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:MSIX_CERTIFICATE))
-            $arguments.CertificatePath = $pfx
-            $arguments.CertificatePassword = ConvertTo-SecureString $env:MSIX_CERTIFICATE_PASSWORD -AsPlainText -Force
-          }
-          ./Packaging/Build-Msix.ps1 @arguments
-          if ($env:MSIX_CERTIFICATE) {
-            # The public half, for testers to trust before installing.
-            $certificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new($pfx, $env:MSIX_CERTIFICATE_PASSWORD)
-            [IO.File]::WriteAllBytes("msix/EyeBrowse.cer", $certificate.Export("Cert"))
-            Remove-Item $pfx
-          }
+          $pfx = Join-Path $env:RUNNER_TEMP "signing.pfx"
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:MSIX_CERTIFICATE))
+          $certificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new($pfx, $env:MSIX_CERTIFICATE_PASSWORD)
+          # The package's publisher must be the certificate's subject for it to be signed.
+          ./Packaging/Build-Msix.ps1 -OutDir msix-test `
+            -Version "${{ needs.version.outputs.number }}.0" -AppVersion "${{ needs.version.outputs.version }}" `
+            -IdentityName "EyeBrowse.Test" -Publisher $certificate.Subject -PublisherDisplayName "EyeBrowse (test)" `
+            -CertificatePath $pfx -CertificatePassword (ConvertTo-SecureString $env:MSIX_CERTIFICATE_PASSWORD -AsPlainText -Force)
+          # The public half, for testers to trust before installing.
+          [IO.File]::WriteAllBytes("msix-test/EyeBrowse.cer", $certificate.Export("Cert"))
+          Remove-Item $pfx
 
       - uses: actions/upload-artifact@v7
         with:
-          name: EyeBrowse-msix
+          name: msix-test
           path: |
-            msix/*.msixbundle
-            msix/*.cer
+            msix-test/*.msixbundle
+            msix-test/*.cer
+          if-no-files-found: ignore
           retention-days: 14
 
   release:
@@ -171,8 +194,10 @@ jobs:
     permissions:
       contents: write
     steps:
+      # The programs only; the MSIX bundles are for the Store and testing, not for releases.
       - uses: actions/download-artifact@v8
         with:
+          pattern: EyeBrowse-*
           path: dist
           merge-multiple: true
 
