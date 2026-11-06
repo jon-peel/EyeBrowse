@@ -20,11 +20,12 @@ public partial class AboutWindow : Window
             .Split("\n\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
-    // A link's text is its address; it opens in the default browser.
-    void OpenLink(object? sender, PointerPressedEventArgs e)
+    // A link's text is its address, or ends with it; it opens in the default browser.
+    internal static void OpenLink(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is TextBlock { Text: { } text } && Uri.TryCreate(text, UriKind.Absolute, out var uri))
-            _ = Launcher.LaunchUriAsync(uri);
+        if (sender is TextBlock { Text: { } text } link
+            && Uri.TryCreate(text[(text.LastIndexOf(' ') + 1)..], UriKind.Absolute, out var uri))
+            _ = TopLevel.GetTopLevel(link)?.Launcher.LaunchUriAsync(uri);
     }
 
     // Most notices are wrapped at 72-80 columns, wider than the window, so rejoin those

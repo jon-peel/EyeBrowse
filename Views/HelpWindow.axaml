@@ -40,6 +40,14 @@
             <Setter Property="BorderBrush" Value="Chartreuse" />
             <Setter Property="Background" Value="#247FFF00" />
         </Style>
+        <!-- Links open in the browser on a click, as in About. -->
+        <Style Selector="TextBlock.link">
+            <Setter Property="Foreground" Value="#DFFFBF" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="TextBlock.link:pointerover">
+            <Setter Property="TextDecorations" Value="Underline" />
+        </Style>
         <Style Selector="Border.box">
             <Setter Property="Width" Value="16" />
             <Setter Property="Height" Value="16" />
@@ -113,5 +121,7 @@
 
         <TextBlock Classes="note" Margin="0,16,0,0" FontSize="11"
                    Text="Images: PNG, JPEG, BMP, GIF, TIFF and WebP. Archives: .cbz and .zip, and .cbr, .cb7 or .cbt files that are really zips. Press Esc to close this window. Press A for About and licences." />
+        <TextBlock Classes="link" PointerPressed="OpenLink" Margin="0,6,0,0" FontSize="11"
+                   Text="Bugs and suggestions: https://github.com/jon-peel/EyeBrowse/issues" />
     </StackPanel>
 </Window>

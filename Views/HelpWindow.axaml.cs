@@ -37,6 +37,8 @@ public partial class HelpWindow : Window
         ShowSettings();
     }
 
+    void OpenLink(object? sender, PointerPressedEventArgs e) => AboutWindow.OpenLink(sender, e);
+
     void Toggle()
     {
         var (_, _, get, set) = _rows[_selected];
