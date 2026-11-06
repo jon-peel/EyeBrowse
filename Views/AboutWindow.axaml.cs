@@ -20,6 +20,13 @@ public partial class AboutWindow : Window
             .Split("\n\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
+    // A link's text is its address; it opens in the default browser.
+    void OpenLink(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is TextBlock { Text: { } text } && Uri.TryCreate(text, UriKind.Absolute, out var uri))
+            _ = Launcher.LaunchUriAsync(uri);
+    }
+
     // Most notices are wrapped at 72-80 columns, wider than the window, so rejoin those
     // lines to wrap at the window's width. Short lines, rules, indented lines, list items
     // and comment lines keep their breaks. (Not a Regex: that adds about 100 KB.)

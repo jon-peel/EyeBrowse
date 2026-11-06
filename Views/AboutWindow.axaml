@@ -19,6 +19,14 @@
         <Style Selector="TextBlock.note">
             <Setter Property="Foreground" Value="#B8D99A" />
         </Style>
+        <!-- Links open in the browser on a click: this is a window, not the image. -->
+        <Style Selector="TextBlock.link">
+            <Setter Property="Foreground" Value="#DFFFBF" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="TextBlock.link:pointerover">
+            <Setter Property="TextDecorations" Value="Underline" />
+        </Style>
         <Style Selector="Grid.parts TextBlock">
             <Setter Property="Margin" Value="0,1" />
             <Setter Property="FontSize" Value="12" />
@@ -38,7 +46,11 @@
 
             <TextBlock Classes="heading" Text="Licence" />
             <TextBlock Text="EyeBrowse is open source, under the GNU General Public License, version 3 (GPL-3.0). It comes with no warranty." />
-            <TextBlock Text="https://github.com/jon-peel/EyeBrowse" Margin="0,4,0,0" Foreground="#DFFFBF" />
+            <TextBlock Classes="link" PointerPressed="OpenLink" Text="https://github.com/jon-peel/EyeBrowse" Margin="0,4,0,0" />
+
+            <TextBlock Classes="heading" Text="Bugs and suggestions" />
+            <TextBlock Text="Report a bug or suggest an idea on GitHub:" />
+            <TextBlock Classes="link" PointerPressed="OpenLink" Text="https://github.com/jon-peel/EyeBrowse/issues" Margin="0,4,0,0" />
 
             <TextBlock Classes="heading" Text="Built with" />
             <Grid Classes="parts" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
